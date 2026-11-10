@@ -5,6 +5,6 @@ import dev.malashenko.aggregator.core.model.DataRecord;
 import java.util.List;
 
 public interface ApiMapper {
-	public List<DataRecord> map(String json);
+	List<DataRecord> map(String json);
 
 }

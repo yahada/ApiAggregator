@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 public interface ApiSource {
-	public String id();
+	String id();
 	Set<String> knownParams();
-	public List<DataRecord> getApiRequest(RequestParams spec);
+	List<DataRecord> getApiRequest(RequestParams spec);
 }

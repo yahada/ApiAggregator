@@ -34,7 +34,7 @@ public class Aggregator {
 	}
 
 	public List<ApiSource> getApiSources() {
-		return (List<ApiSource>) apiSourceMap.values();
+		return apiSourceMap.values().stream().toList();
 	}
 
 	public void makeRequest(EntityType apiType, RequestParams params) {
@@ -42,18 +42,15 @@ public class Aggregator {
 		dataStorage.saveData(records, writeMode, Path.of(filename));
 	}
 
-	public void readData() {
+	public void readData(Optional<EntityType> apiType) {
 		List<DataRecord> records = dataStorage.readData(Path.of(filename));
+		if (apiType.isPresent()) {
+			records = records.stream().filter(record -> record.entityType().equals(apiType.get())).toList();
+		}
 		for (DataRecord record: records) {
 			System.out.println(record);
 		}
 	}
 
-	public void readByApi(EntityType apiType) {
-		List<DataRecord> records = dataStorage.readData(Path.of(filename));
-		List<DataRecord> apiRecords = records.stream().filter(record -> record.entityType().equals(apiType)).toList();
-		for (DataRecord record: apiRecords) {
-			System.out.println(record);
-		}
-	}
+
 }

@@ -1,11 +1,18 @@
 package dev.malashenko.aggregator.cli.parsers;
 
+import dev.malashenko.aggregator.core.model.EntityType;
 import dev.malashenko.aggregator.core.model.RequestParams;
 import dev.malashenko.aggregator.core.source.ApiSource;
 
 import java.util.*;
 
 public class CommandParser {
+
+	private static final Map<String, EntityType> SOURCE_TO_TYPE = Map.of(
+		"coinmarketcap", EntityType.CRYPTOCURRENCY,
+		"usgs",          EntityType.EARTHQUAKE,
+		"hackernews",    EntityType.NEWS
+	);
 
 	private final Map<String, Set<String>> knownParamsByApi;
 
@@ -43,6 +50,7 @@ public class CommandParser {
 
 	private DataCommandArgs parseData(Map<String, String> params) {
 		String api = requireApi(params);            // обязательно
+		EntityType entityType = SOURCE_TO_TYPE.get(api);
 		Set<String> known = knownParamsByApi.get(api);
 
 		Map<String, String> apiParams = new LinkedHashMap<>(params);
@@ -58,7 +66,7 @@ public class CommandParser {
 					+ "; allowed: " + new TreeSet<>(known));
 		}
 
-		return new DataCommandArgs(api, new RequestParams(apiParams));
+		return new DataCommandArgs(api, entityType, new RequestParams(apiParams));
 	}
 
 	// ---------- show [API=<name>] ----------
@@ -68,14 +76,23 @@ public class CommandParser {
 			                       .filter(k -> !k.equals("API"))
 			                       .sorted()
 			                       .toList();
+
 		if (!unknown.isEmpty()) {
-			throw new IllegalArgumentException(
-				"unknown parameters for 'show': " + unknown
-					+ "; allowed: [API]");
+			throw new IllegalArgumentException("unknown parameters for 'show': " + unknown + "; allowed: [API]");
 		}
-		Optional<String> api = Optional.ofNullable(params.get("API"));
-		api.ifPresent(this::requireApiExists);
-		return new ShowCommandArgs(api);
+
+		Optional<EntityType> entityType = Optional.ofNullable(params.get("API"))
+			                                  .map(api -> {
+				                                  EntityType t = SOURCE_TO_TYPE.get(api);
+				                                  if (t == null) {
+					                                  throw new IllegalArgumentException(
+						                                  "unknown API: '" + api + "'; available: "
+							                                  + SOURCE_TO_TYPE.keySet());
+				                                  }
+				                                  return t;
+			                                  });
+		
+		return new ShowCommandArgs(entityType);
 	}
 
 	// ---------- helpers ----------
@@ -83,9 +100,7 @@ public class CommandParser {
 	private String requireApi(Map<String, String> params) {
 		String api = params.get("API");
 		if (api == null || api.isBlank()) {
-			throw new IllegalArgumentException(
-				"missing required parameter: API; available: "
-					+ knownParamsByApi.keySet());
+			throw new IllegalArgumentException("missing required parameter: API; available: " + knownParamsByApi.keySet());
 		}
 		requireApiExists(api);
 		return api;
@@ -94,8 +109,7 @@ public class CommandParser {
 	private void requireApiExists(String api) {
 		if (!knownParamsByApi.containsKey(api)) {
 			throw new IllegalArgumentException(
-				"unknown API: '" + api + "'; available: "
-					+ knownParamsByApi.keySet());
+				"unknown API: '" + api + "'; available: " + knownParamsByApi.keySet());
 		}
 	}
 }

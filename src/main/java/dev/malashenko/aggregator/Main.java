@@ -1,31 +1,9 @@
 package dev.malashenko.aggregator;
-
-import dev.malashenko.aggregator.cli.commands.Command;
 import dev.malashenko.aggregator.cli.parsers.*;
 import dev.malashenko.aggregator.core.aggregator.Aggregator;
 import dev.malashenko.aggregator.core.aggregator.AggregatorBuilder;
-
-import dev.malashenko.aggregator.core.model.EntityType;
-import dev.malashenko.aggregator.core.model.RequestParams;
-
-import dev.malashenko.aggregator.core.source.ApiSource;
-import dev.malashenko.aggregator.core.source.coinmarketcap.CoinMarketCapHttpApiSource;
-import dev.malashenko.aggregator.core.source.coinmarketcap.CoinMarketCapMapper;
-import dev.malashenko.aggregator.core.source.earthquake.usgs.EarthquakeUsgsHttpApiSource;
-import dev.malashenko.aggregator.core.source.earthquake.usgs.EarthquakeUsgsMapper;
-import dev.malashenko.aggregator.core.source.hackernews.HackerNewsHttpApiSource;
-import dev.malashenko.aggregator.core.source.hackernews.HackerNewsMapper;
-import dev.malashenko.aggregator.core.storage.StorageFormat;
-import dev.malashenko.aggregator.core.storage.WriteMode;
-
-import java.lang.reflect.Array;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 
-import static dev.malashenko.aggregator.core.aggregator.AggregatorBuilder.httpResponder;
-import static dev.malashenko.aggregator.core.aggregator.AggregatorBuilder.objectMapper;
 
 public class Main {
 	public static void main(String[] args) {
@@ -52,24 +30,20 @@ public class Main {
 				if (line.isBlank()) continue;
 				if (line.equalsIgnoreCase("exit") || line.equalsIgnoreCase("quit")) break;
 
-				CommandArgs commandArgs =
+				try {
+					CommandArgs commandArgs = commandParser.parse(line);
+					switch (commandArgs) {
+						case DataCommandArgs dataCommandArgs -> aggregator.makeRequest(dataCommandArgs.entityType(), dataCommandArgs.apiParams());
+						case ShowCommandArgs showCommandArgs -> aggregator.readData(showCommandArgs.optional());
+					}
+				} catch (IllegalArgumentException e) {
+					System.err.println("Got an exception: " + e);
+				}
+
 			}
-
-
-		} catch (IllegalArgumentException e) {
-		System.err.println("error: " + e.getMessage());
 		} catch (RuntimeException e) {
-		System.err.println("failed: " + e.getMessage());
-	}
-
-		RequestParams params = new RequestParams(Map.of(
-			"tags", "story",
-			"hitsPerPage", "11",
-			"numericFilters", "points>2"
-		));
-
-		aggregator.makeRequest(EntityType.NEWS, params);
-
+		System.err.println("error: " + e.getMessage());
+		}
 
 	}
 }

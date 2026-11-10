@@ -7,7 +7,7 @@ import java.util.Set;
 
 public class EarthquakeUsgsHttpApiSource extends AbstractHttpApiSource {
 	private final static String ORIGIN_URL = "https://earthquake.usgs.gov/fdsnws/event/1/query";
-	public final static String SOURCE_ID = "earthquake.usgs";
+	public final static String SOURCE_ID = "usgs";
 
 	public EarthquakeUsgsHttpApiSource(HttpResponder responder, EarthquakeUsgsMapper mapper) {
 		super(responder, mapper);
