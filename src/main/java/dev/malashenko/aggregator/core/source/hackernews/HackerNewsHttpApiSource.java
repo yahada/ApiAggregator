@@ -3,9 +3,11 @@ package dev.malashenko.aggregator.core.source.hackernews;
 import dev.malashenko.aggregator.core.http.HttpResponder;
 import dev.malashenko.aggregator.core.source.AbstractHttpApiSource;
 
+import java.util.Set;
+
 public class HackerNewsHttpApiSource extends AbstractHttpApiSource {
 	private final static String ORIGIN_URL = "https://hn.algolia.com/api/v1/search";
-	static final String SOURCE_ID = "hackernews";
+	public final static String SOURCE_ID = "hackernews";
 
 	public HackerNewsHttpApiSource(HttpResponder responder, HackerNewsMapper mapper) {
 		super(responder, mapper);
@@ -14,5 +16,16 @@ public class HackerNewsHttpApiSource extends AbstractHttpApiSource {
 	@Override
 	protected String originUrl() {
 		return ORIGIN_URL;
+	}
+
+	@Override
+	public String id() {
+		return SOURCE_ID;
+	}
+
+	@Override
+	public Set<String> knownParams() {
+		return Set.of("query", "tags", "hitsPerPage", "page",
+			"numericFilters", "restrictSearchableAttributes");
 	}
 }

@@ -23,8 +23,11 @@ public abstract class AbstractHttpApiSource implements ApiSource {
 
 	public List<DataRecord> getApiRequest(RequestParams params) {
 		String url = UrlMaker.makeUrl(originUrl(), params);
-		log.info("URL = " + url);
+		System.out.println("[DEBUG] GET " + url);
+
 		HttpResponse<String> response = responder.getHttpResponse(url);
+		System.out.println("[DEBUG] status=" + response.statusCode()
+			                   + " body=" + response.body().substring(0, Math.min(200, response.body().length())));
 		return mapper.map(response.body());
 	}
 }

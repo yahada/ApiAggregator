@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface ApiMapper {
 	public List<DataRecord> map(String json);
+
 }

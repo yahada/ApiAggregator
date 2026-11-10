@@ -2,7 +2,7 @@ plugins {
     id 'java'
 }
 
-group = 'org.example'
+group = 'dev.malashenko'
 version = '1.0-SNAPSHOT'
 
 repositories {
@@ -25,6 +25,10 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.19.1'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.1'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.19.1'
+
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.19.1'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.1'
+    implementation 'org.apache.commons:commons-csv:1.11.0'
 
 
 }

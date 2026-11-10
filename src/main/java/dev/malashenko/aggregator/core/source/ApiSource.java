@@ -4,7 +4,10 @@ import dev.malashenko.aggregator.core.model.DataRecord;
 import dev.malashenko.aggregator.core.model.RequestParams;
 
 import java.util.List;
+import java.util.Set;
 
 public interface ApiSource {
-	List<DataRecord> getApiRequest(RequestParams spec);
+	public String id();
+	Set<String> knownParams();
+	public List<DataRecord> getApiRequest(RequestParams spec);
 }
