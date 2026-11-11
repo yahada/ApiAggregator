@@ -20,14 +20,12 @@ public abstract class AbstractHttpApiSource implements ApiSource {
 	}
 
 	protected abstract String originUrl();
-
+	protected abstract RequestParams enrich(RequestParams params);
 	public List<DataRecord> getApiRequest(RequestParams params) {
-		String url = UrlMaker.makeUrl(originUrl(), params);
-		System.out.println("[DEBUG] GET " + url);
+		String url = UrlMaker.makeUrl(originUrl(), enrich(params));
 
 		HttpResponse<String> response = responder.getHttpResponse(url);
-		System.out.println("[DEBUG] status=" + response.statusCode()
-			                   + " body=" + response.body().substring(0, Math.min(200, response.body().length())));
+
 		return mapper.map(response.body());
 	}
 }

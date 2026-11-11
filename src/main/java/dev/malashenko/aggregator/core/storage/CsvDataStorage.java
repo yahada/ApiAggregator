@@ -1,3 +1,4 @@
+
 package dev.malashenko.aggregator.core.storage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -23,43 +24,73 @@ import java.util.List;
 import java.util.Map;
 
 public class CsvDataStorage implements DataStorage {
+
+	private static final String[] HEADER = {
+		"source", "entity_type", "entity_id", "observed_at", "metrics"
+	};
+
 	private final ObjectMapper objectMapper;
-	private static final String[] HEADER = {"source", "entity_type", "entity_id", "observed_at", "metrics"};
 
 	public CsvDataStorage(ObjectMapper objectMapper) {
 		this.objectMapper = objectMapper;
 	}
 
-
 	@Override
 	public void saveData(List<DataRecord> data, WriteMode mode, Path path) {
+		try {
+			Path parent = path.toAbsolutePath().getParent();
+			Files.createDirectories(parent);
 
-		boolean writeHeader = (mode == WriteMode.NEW) || !Files.exists(path);
+			boolean writeHeader = mode == WriteMode.NEW
+				                      || !Files.exists(path)
+				                      || Files.size(path) == 0;
 
-		StandardOpenOption openOption = (mode ==  WriteMode.NEW) ? StandardOpenOption.TRUNCATE_EXISTING : StandardOpenOption.APPEND;
-		StandardOpenOption[] options = new StandardOpenOption[]{StandardOpenOption.CREATE, openOption, StandardOpenOption.WRITE};
-
-		try (Writer writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8, options);
-		     CSVPrinter printer = new CSVPrinter(writer, CSVFormat.DEFAULT.builder()
-			                                                 .setHeader(writeHeader ? HEADER : null)
-			                                                 .build())) {
-
-			for (DataRecord record : data) {
-				printer.printRecord(
-					record.source(),
-					record.entityType().name(),
-					record.entityId(),
-					record.observedAt().toString(),
-					objectMapper.writeValueAsString(record.metrics()));
+			StandardOpenOption[] options = mode == WriteMode.NEW
+				                               ? new StandardOpenOption[]{
+				StandardOpenOption.CREATE,
+				StandardOpenOption.TRUNCATE_EXISTING,
+				StandardOpenOption.WRITE
 			}
+				                               : new StandardOpenOption[]{
+				StandardOpenOption.CREATE,
+				StandardOpenOption.APPEND,
+				StandardOpenOption.WRITE
+			};
+
+			CSVFormat format = CSVFormat.DEFAULT.builder()
+				                   .setHeader(writeHeader ? HEADER : null)
+				                   .build();
+
+			try (Writer writer = Files.newBufferedWriter(
+				path, StandardCharsets.UTF_8, options);
+			     CSVPrinter printer = new CSVPrinter(writer, format)) {
+
+				for (DataRecord record : data) {
+					printer.printRecord(
+						record.source(),
+						record.entityType().name(),
+						record.entityId(),
+						record.observedAt().toString(),
+						objectMapper.writeValueAsString(record.metrics())
+					);
+				}
+			}
+
 		} catch (IOException e) {
-			throw new StorageException("Failed to write CSV to " + path + ": " + e.getMessage(), e);
+			throw new StorageException(
+				"Failed to write CSV to " + path + ": " + e.getMessage(), e
+			);
 		}
 	}
 
 	@Override
 	public List<DataRecord> readData(Path path) {
+		if (!Files.exists(path)) {
+			return new ArrayList<>();
+		}
+
 		List<DataRecord> records = new ArrayList<>();
+
 		try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8);
 		     CSVParser parser = CSVFormat.DEFAULT.builder()
 			                        .setHeader()
@@ -70,25 +101,32 @@ public class CsvDataStorage implements DataStorage {
 			for (CSVRecord row : parser) {
 				Map<String, Object> metrics = objectMapper.readValue(
 					row.get("metrics"),
-					new TypeReference<Map<String, Object>>() {});
+					new TypeReference<Map<String, Object>>() {}
+				);
 
 				records.add(new DataRecord(
 					row.get("source"),
 					EntityType.valueOf(row.get("entity_type")),
 					row.get("entity_id"),
 					Instant.parse(row.get("observed_at")),
-					metrics));
+					metrics
+				));
 			}
-			return records;
-		} catch (IOException e) {
-			throw new StorageException("Failed to read CSV from " + path + ": " + e.getMessage(), e);
-		}
 
+			return records;
+
+		} catch (IOException | IllegalArgumentException e) {
+			throw new StorageException(
+				"Failed to read CSV from " + path + ": " + e.getMessage(), e
+			);
+		}
 	}
 
 	@Override
 	public List<DataRecord> readByApi(EntityType apiType, Path path) {
-		return readData(path).stream().filter(dataRecord -> dataRecord.entityType().equals(apiType)).toList();
+		return readData(path).stream()
+			       .filter(record -> record.entityType() == apiType)
+			       .toList();
 	}
 
 	@Override

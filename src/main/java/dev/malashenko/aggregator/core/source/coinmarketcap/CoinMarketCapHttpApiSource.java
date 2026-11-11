@@ -1,7 +1,9 @@
 package dev.malashenko.aggregator.core.source.coinmarketcap;
 import dev.malashenko.aggregator.core.http.HttpResponder;
+import dev.malashenko.aggregator.core.model.RequestParams;
 import dev.malashenko.aggregator.core.source.AbstractHttpApiSource;
 
+import java.util.LinkedHashMap;
 import java.util.Set;
 
 
@@ -27,5 +29,10 @@ public class CoinMarketCapHttpApiSource extends AbstractHttpApiSource {
 	@Override
 	public Set<String> knownParams() {
 		return Set.of("symbol", "id", "slug", "convert", "skip_invalid");
+	}
+
+	@Override
+	public RequestParams enrich(RequestParams params) {
+		return params;
 	}
 }

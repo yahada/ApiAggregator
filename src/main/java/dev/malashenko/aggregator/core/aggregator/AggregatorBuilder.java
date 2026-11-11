@@ -1,47 +1,118 @@
 package dev.malashenko.aggregator.core.aggregator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.malashenko.aggregator.core.http.HttpResponder;
+import dev.malashenko.aggregator.core.http.*;
 import dev.malashenko.aggregator.core.model.EntityType;
 import dev.malashenko.aggregator.core.source.ApiSource;
-import dev.malashenko.aggregator.core.source.coinmarketcap.CoinMarketCapHttpApiSource;
-import dev.malashenko.aggregator.core.source.coinmarketcap.CoinMarketCapMapper;
-import dev.malashenko.aggregator.core.source.earthquake.usgs.EarthquakeUsgsHttpApiSource;
-import dev.malashenko.aggregator.core.source.earthquake.usgs.EarthquakeUsgsMapper;
-import dev.malashenko.aggregator.core.source.hackernews.HackerNewsHttpApiSource;
-import dev.malashenko.aggregator.core.source.hackernews.HackerNewsMapper;
-import dev.malashenko.aggregator.core.storage.DataStorage;
-import dev.malashenko.aggregator.core.storage.DataStorageFactory;
-import dev.malashenko.aggregator.core.storage.StorageFormat;
-import dev.malashenko.aggregator.core.storage.WriteMode;
+import dev.malashenko.aggregator.core.source.coinmarketcap.*;
+import dev.malashenko.aggregator.core.source.earthquake.usgs.*;
+import dev.malashenko.aggregator.core.source.hackernews.*;
+import dev.malashenko.aggregator.core.storage.*;
+import dev.malashenko.aggregator.core.tools.FileExtension;
 
-import java.util.HashMap;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class AggregatorBuilder {
-	private final static HttpResponder httpResponder = new HttpResponder();
-	private final static ObjectMapper objectMapper= DataStorageFactory.defaultMapper();
 
+	private final HttpResponder httpResponder;
+	private final ObjectMapper objectMapper;
 
-	private AggregatorBuilder() {}
+	public AggregatorBuilder(
+		HttpResponder httpResponder,
+		ObjectMapper objectMapper
+	) {
+		this.httpResponder = Objects.requireNonNull(httpResponder);
+		this.objectMapper = Objects.requireNonNull(objectMapper);
+	}
 
+	public static AggregatorBuilder createDefault() {
+		HttpClientProvider clientProvider = new HttpClientProvider();
 
-	public static Aggregator buildAggregator(List<EntityType> entityTypeList, StorageFormat storageFormat, WriteMode writeMode, String filename) {
-		DataStorage dataStorage = DataStorageFactory.getDataStorage(storageFormat, objectMapper);
-		Map<EntityType, ApiSource> apiSourceMap = new HashMap<>();
-		for (EntityType entityType: entityTypeList) {
+		HttpRequestFactory requestFactory = new HttpRequestFactory();
+
+		RetryPolicy retryPolicy = new RetryPolicy(
+			3,
+			Duration.ofSeconds(1),
+			Duration.ofSeconds(10)
+		);
+
+		HttpResponder responder = new HttpResponder(
+			clientProvider,
+			requestFactory,
+			retryPolicy
+		);
+
+		ObjectMapper mapper = DataStorageFactory.defaultMapper();
+
+		return new AggregatorBuilder(responder, mapper);
+	}
+
+	public Aggregator buildAggregator(
+		List<EntityType> entityTypeList,
+		StorageFormat storageFormat,
+		WriteMode writeMode,
+		String filename
+	) {
+		Objects.requireNonNull(entityTypeList);
+		Objects.requireNonNull(storageFormat);
+		Objects.requireNonNull(writeMode);
+
+		DataStorage dataStorage =
+			DataStorageFactory.getDataStorage(storageFormat, objectMapper);
+
+		Map<EntityType, ApiSource> apiSourceMap =
+			new EnumMap<>(EntityType.class);
+
+		for (EntityType entityType : entityTypeList) {
 			ApiSource apiSource = switch (entityType) {
-				case EntityType.NEWS -> new HackerNewsHttpApiSource(httpResponder, new HackerNewsMapper(objectMapper));
-				case EntityType.CRYPTOCURRENCY -> new CoinMarketCapHttpApiSource(httpResponder, new CoinMarketCapMapper(objectMapper));
-				case EntityType.EARTHQUAKE -> new EarthquakeUsgsHttpApiSource(httpResponder, new EarthquakeUsgsMapper(objectMapper));
+				case NEWS -> new HackerNewsHttpApiSource(
+					httpResponder,
+					new HackerNewsMapper(objectMapper)
+				);
+
+				case CRYPTOCURRENCY -> new CoinMarketCapHttpApiSource(
+					httpResponder,
+					new CoinMarketCapMapper(objectMapper)
+				);
+
+				case EARTHQUAKE -> new EarthquakeUsgsHttpApiSource(
+					httpResponder,
+					new EarthquakeUsgsMapper(objectMapper)
+				);
 			};
+
 			apiSourceMap.put(entityType, apiSource);
 		}
 
-		return new Aggregator(dataStorage, writeMode, apiSourceMap, filename);
+		Path outputPath = resolveOutputPath(filename, storageFormat);
+
+		return new Aggregator(
+			dataStorage,
+			writeMode,
+			apiSourceMap,
+			outputPath
+		);
 	}
 
+	private Path resolveOutputPath(
+		String filename,
+		StorageFormat storageFormat
+	) {
+		String extension = FileExtension.formatOf(storageFormat);
+
+		if (filename == null || filename.isBlank()) {
+			return Path.of("data." + extension);
+		}
+
+		if (FileExtension.extension(filename).isEmpty()) {
+			return Path.of(filename + "." + extension);
+		}
+
+		return Path.of(filename);
+	}
 }
-
-

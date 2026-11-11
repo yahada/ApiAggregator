@@ -1,8 +1,11 @@
 package dev.malashenko.aggregator.core.source.earthquake.usgs;
 
 import dev.malashenko.aggregator.core.http.HttpResponder;
+import dev.malashenko.aggregator.core.model.RequestParams;
 import dev.malashenko.aggregator.core.source.AbstractHttpApiSource;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
 public class EarthquakeUsgsHttpApiSource extends AbstractHttpApiSource {
@@ -25,8 +28,13 @@ public class EarthquakeUsgsHttpApiSource extends AbstractHttpApiSource {
 
 	@Override
 	public Set<String> knownParams() {
-		return Set.of("minmagnitude", "maxmagnitude", "limit", "orderby",
-			"starttime", "endtime", "latitude", "longitude",
-			"maxradiuskm", "eventtype");
+		return Set.of("minmagnitude", "maxmagnitude", "limit", "orderby", "starttime", "endtime", "latitude", "longitude", "maxradiuskm", "eventtype");
+	}
+
+	@Override
+	protected RequestParams enrich(RequestParams params) {
+		Map<String, String> enriched = new LinkedHashMap<>(params.queryParams());
+		enriched.put("format", "geojson");
+		return new RequestParams(enriched);
 	}
 }

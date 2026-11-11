@@ -3,53 +3,84 @@ package dev.malashenko.aggregator.core.http;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.Duration;
 
 @Slf4j
 public class HttpResponder {
-	private static final int MAXRETRIES = 3;
+
+	private final HttpClient httpClient;
+	private final HttpRequestFactory requestFactory;
+	private final RetryPolicy retryPolicy;
+
+	public HttpResponder(
+		HttpClientProvider clientProvider,
+		HttpRequestFactory requestFactory,
+		RetryPolicy retryPolicy
+	) {
+		this.httpClient = clientProvider.getClient();
+		this.requestFactory = requestFactory;
+		this.retryPolicy = retryPolicy;
+	}
 
 	public HttpResponse<String> getHttpResponse(String url) {
-		HttpClient client = HttpClient.newBuilder()
-			                    .connectTimeout(Duration.ofSeconds(5))
-			                    .build();
+		HttpRequest request = requestFactory.createGetRequest(url);
 
-		HttpRequest request = HttpRequest.newBuilder()
-			                      .uri(URI.create(url))
-			                      .GET()
-			                      .build();
+		for (int attempt = 1;
+		     attempt <= retryPolicy.getMaxAttempts();
+		     attempt++) {
 
-		int attempt = 0;
-		HttpResponse<String> response = null;
-		while (attempt < MAXRETRIES) {
 			try {
-				response = client.send(request, HttpResponse.BodyHandlers.ofString());
-				log.info("Got response from url: " + url);
-				break;
-			} catch (IOException | InterruptedException e) {
-				attempt++;
+				HttpResponse<String> response = httpClient.send(
+					request,
+					HttpResponse.BodyHandlers.ofString()
+				);
 
-				log.error("Attempt " + attempt + " failed: " + e.getMessage() + "; URL: " + url);
+				log.info("Got response from URL: {}", url);
 
-				if (attempt >= MAXRETRIES) {
-					log.error("Max retries reached. Giving up.");
+				return response;
 
-					break;
+			} catch (IOException e) {
+				log.error(
+					"Attempt {} failed. URL: {}. Error: {}",
+					attempt,
+					url,
+					e.getMessage()
+				);
+
+				if (attempt == retryPolicy.getMaxAttempts()) {
+					throw new IllegalStateException(
+						"Failed to get HTTP response from: " + url,
+						e
+					);
 				}
 
-				long delay = (long) Math.pow(2, attempt) * 1000; // Экспоненциальная задержка
-				try {
-					Thread.sleep(delay);
-				} catch (InterruptedException ex) {
-					throw new RuntimeException(ex);
-				}
+				waitBeforeRetry(retryPolicy.getDelay(attempt));
+
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+
+				throw new IllegalStateException(
+					"HTTP request was interrupted: " + url,
+					e
+				);
 			}
-
 		}
-		return response;
+
+		throw new IllegalStateException("Unexpected retry state");
+	}
+
+	private void waitBeforeRetry(java.time.Duration delay) {
+		try {
+			Thread.sleep(delay.toMillis());
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+
+			throw new IllegalStateException(
+				"Retry was interrupted",
+				e
+			);
+		}
 	}
 }
