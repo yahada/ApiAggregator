@@ -1,6 +1,7 @@
 package dev.malashenko.aggregator.core.source.earthquake.usgs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.malashenko.aggregator.core.exception.ApiException;
@@ -32,37 +33,17 @@ public class EarthquakeUsgsMapper implements ApiMapper {
 			throw new ApiException("USGS parse error: " + e.getMessage(), e);
 		}
 
-		int httpStatus = root.path("metadata").path("status").asInt(200);
-		if (httpStatus != 200) {
-			throw new ApiException("USGS API error " + httpStatus);
-		}
-
 		List<DataRecord> records = new ArrayList<>();
 		for (JsonNode feature : root.path("features")) {
-			JsonNode props = feature.path("properties");
-			JsonNode coords = feature.path("geometry").path("coordinates");
+			// ВСЁ, что есть в feature — properties, geometry, id — как есть
+			Map<String, Object> metrics = objectMapper.convertValue(
+				feature,
+				new TypeReference<Map<String, Object>>() {});
 
-			Map<String, Object> metrics = new LinkedHashMap<>();
-			metrics.put("magnitude", props.path("mag").asDouble());
-			metrics.put("place", props.path("place").asText());
-			metrics.put("tsunami", props.path("tsunami").asInt());
-			metrics.put("significance", props.path("sig").asInt());
-			metrics.put("longitude", coords.path(0).asDouble());
-			metrics.put("latitude", coords.path(1).asDouble());
-			metrics.put("depth_km", coords.path(2).asDouble());
+			// observedAt всё равно нужно достать отдельно — это поле DataRecord
+			Instant observedAt = Instant.ofEpochMilli(
+				feature.path("properties").path("time").asLong(0));
 
-			putIfPresent(metrics, "felt", props, "felt");
-			putIfPresent(metrics, "mag_type", props, "magType");
-			putIfPresent(metrics, "status", props, "status");
-
-			if (metrics.isEmpty()) continue;
-
-			Instant observedAt;
-			try {
-				observedAt = Instant.ofEpochMilli(props.path("time").asLong());
-			} catch (DateTimeException e) {
-				throw new ApiException("CMC bad timestamp: " + e.getMessage(), e);
-			}
 			records.add(new DataRecord(
 				EarthquakeUsgsHttpApiSource.SOURCE_ID,
 				EntityType.EARTHQUAKE,
@@ -71,17 +52,5 @@ public class EarthquakeUsgsMapper implements ApiMapper {
 				metrics));
 		}
 		return records;
-	}
-
-	private static void putIfPresent(Map<String, Object> metrics, String key, JsonNode node, String field) {
-		JsonNode value = node.path(field);
-		if (value.isMissingNode() || value.isNull()) {
-			return;
-		}
-		if (value.isNumber()) {
-			metrics.put(key, value.asInt());
-		} else {
-			metrics.put(key, value.asText());
-		}
 	}
 }

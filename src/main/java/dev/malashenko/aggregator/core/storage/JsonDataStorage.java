@@ -10,6 +10,7 @@ import dev.malashenko.aggregator.core.model.EntityType;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,28 +23,18 @@ public class JsonDataStorage implements DataStorage {
 	}
 
 	@Override
-	public void saveData(List<DataRecord> data, WriteMode mode, Path path) {
+	public void saveData(List<DataRecord> data, Path path) {
 		try {
 			Path parent = path.toAbsolutePath().getParent();
 			Files.createDirectories(parent);
 
-			List<DataRecord> toWrite;
+			List<DataRecord> toWrite = new ArrayList<>();
 
-			switch (mode) {
-				case NEW -> toWrite = new ArrayList<>(data);
-
-				case APPEND -> {
-					toWrite = Files.exists(path)
-						          ? new ArrayList<>(readData(path))
-						          : new ArrayList<>();
-
-					toWrite.addAll(data);
-				}
-
-				default -> throw new IllegalStateException(
-					"Unsupported write mode: " + mode
-				);
+			if (Files.exists(path) && Files.size(path) > 0) {
+				toWrite.addAll(readData(path));
 			}
+
+			toWrite.addAll(data);
 
 			objectMapper.writerWithDefaultPrettyPrinter()
 				.writeValue(path.toFile(), toWrite);
@@ -54,6 +45,7 @@ public class JsonDataStorage implements DataStorage {
 			);
 		}
 	}
+
 
 	@Override
 	public List<DataRecord> readData(Path path) {

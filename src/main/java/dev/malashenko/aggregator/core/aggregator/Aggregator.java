@@ -47,7 +47,7 @@ public class Aggregator {
 
 		List<DataRecord> records = apiSource.getApiRequest(params);
 
-		dataStorage.saveData(records, writeMode, outputPath);
+		dataStorage.saveData(records, outputPath);
 	}
 
 	public void readData(Optional<EntityType> apiType) {

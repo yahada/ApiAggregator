@@ -1,6 +1,7 @@
 package dev.malashenko.aggregator.core.source.hackernews;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.malashenko.aggregator.core.exception.ApiException;
@@ -25,7 +26,7 @@ public class HackerNewsMapper implements ApiMapper {
 
 	@Override
 	public List<DataRecord> map(String json) {
-		JsonNode root = null;
+		JsonNode root;
 		try {
 			root = objectMapper.readTree(json);
 		} catch (JsonProcessingException e) {
@@ -34,30 +35,16 @@ public class HackerNewsMapper implements ApiMapper {
 
 		List<DataRecord> records = new ArrayList<>();
 		for (JsonNode hit : root.path("hits")) {
-			String objectId = hit.path("objectID").asText();
+			Map<String, Object> metrics = objectMapper.convertValue(
+				hit,
+				new TypeReference<Map<String, Object>>() {});
 
-			Map<String, Object> metrics = new LinkedHashMap<>();
-			metrics.put("title", hit.path("title").asText());
-			metrics.put("url", hit.path("url").asText());
-			metrics.put("author", hit.path("author").asText());
-			metrics.put("points", hit.path("points").asInt());
-			metrics.put("num_comments", hit.path("num_comments").asInt());
-
-			long createdAtEpoch = hit.path("created_at_i").asLong(0);
-			Instant observedAt = createdAtEpoch > 0
-				                     ? Instant.ofEpochSecond(createdAtEpoch)
-				                     : Instant.EPOCH;
-
-			JsonNode highlight = hit.path("_highlightResult");
-			if (!highlight.isMissingNode() && !highlight.isNull()) {
-				metrics.put("highlight_title", highlight.path("title").path("value").asText());
-				metrics.put("highlight_url", highlight.path("url").path("value").asText());
-			}
+			Instant observedAt = Instant.ofEpochSecond(hit.path("created_at_i").asLong(0));
 
 			records.add(new DataRecord(
 				HackerNewsHttpApiSource.SOURCE_ID,
 				EntityType.NEWS,
-				objectId,
+				hit.path("objectID").asText(),
 				observedAt,
 				metrics));
 		}

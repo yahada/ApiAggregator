@@ -3,7 +3,12 @@ package dev.malashenko.aggregator.cli.application;
 import dev.malashenko.aggregator.cli.parsers.*;
 import dev.malashenko.aggregator.core.aggregator.Aggregator;
 import dev.malashenko.aggregator.core.aggregator.AggregatorBuilder;
+import dev.malashenko.aggregator.core.storage.WriteMode;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Scanner;
 
 public class Application {
@@ -23,6 +28,8 @@ public class Application {
 			return 2;
 		}
 
+		prepareFile(parsed);
+
 		try {
 			AggregatorBuilder builder = AggregatorBuilder.createDefault();
 
@@ -40,6 +47,29 @@ public class Application {
 		} catch (RuntimeException e) {
 			System.err.println("error: " + e.getMessage());
 			return 1;
+		}
+	}
+
+	private void prepareFile(InitialArgs parsed) {
+		if (parsed.writeMode() != WriteMode.NEW) {
+			return;
+		}
+
+		Path path = Path.of(parsed.filename());
+
+		try {
+			Files.createDirectories(path.toAbsolutePath().getParent());
+
+			Files.write(
+				path,
+				new byte[0],
+				StandardOpenOption.CREATE,
+				StandardOpenOption.TRUNCATE_EXISTING,
+				StandardOpenOption.WRITE
+			);
+
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to prepare file: " + path, e);
 		}
 	}
 
@@ -72,7 +102,10 @@ public class Application {
 			CommandArgs commandArgs = commandParser.parse(line);
 
 			switch (commandArgs) {
-				case DataCommandArgs data -> aggregator.makeRequest(data.entityType(), data.apiParams());
+				case DataCommandArgs data -> {
+					aggregator.makeRequest(data.entityType(), data.apiParams());
+					System.out.println("Data was written" );
+				}
 				case ShowCommandArgs show -> aggregator.readData(show.optional());
 			}
 

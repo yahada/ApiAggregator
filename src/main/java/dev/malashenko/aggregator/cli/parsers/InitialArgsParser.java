@@ -12,7 +12,7 @@ import java.util.Map;
 
 public class InitialArgsParser {
 	private static final Map<String, EntityType> SOURCE_TO_TYPE = Map.of(
-		"coinmarketcap", EntityType.CRYPTOCURRENCY,
+		"kitsu", EntityType.ANIME,
 		"usgs",          EntityType.EARTHQUAKE,
 		"hackernews",    EntityType.NEWS
 	);

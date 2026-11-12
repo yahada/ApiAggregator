@@ -36,33 +36,23 @@ public class CsvDataStorage implements DataStorage {
 	}
 
 	@Override
-	public void saveData(List<DataRecord> data, WriteMode mode, Path path) {
+	public void saveData(List<DataRecord> data, Path path) {
 		try {
 			Path parent = path.toAbsolutePath().getParent();
 			Files.createDirectories(parent);
 
-			boolean writeHeader = mode == WriteMode.NEW
-				                      || !Files.exists(path)
-				                      || Files.size(path) == 0;
-
-			StandardOpenOption[] options = mode == WriteMode.NEW
-				                               ? new StandardOpenOption[]{
-				StandardOpenOption.CREATE,
-				StandardOpenOption.TRUNCATE_EXISTING,
-				StandardOpenOption.WRITE
-			}
-				                               : new StandardOpenOption[]{
-				StandardOpenOption.CREATE,
-				StandardOpenOption.APPEND,
-				StandardOpenOption.WRITE
-			};
+			boolean writeHeader = !Files.exists(path) || Files.size(path) == 0;
 
 			CSVFormat format = CSVFormat.DEFAULT.builder()
 				                   .setHeader(writeHeader ? HEADER : null)
 				                   .build();
 
 			try (Writer writer = Files.newBufferedWriter(
-				path, StandardCharsets.UTF_8, options);
+				path,
+				StandardCharsets.UTF_8,
+				StandardOpenOption.CREATE,
+				StandardOpenOption.APPEND
+			);
 			     CSVPrinter printer = new CSVPrinter(writer, format)) {
 
 				for (DataRecord record : data) {

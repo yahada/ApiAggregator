@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.malashenko.aggregator.core.http.*;
 import dev.malashenko.aggregator.core.model.EntityType;
 import dev.malashenko.aggregator.core.source.ApiSource;
-import dev.malashenko.aggregator.core.source.coinmarketcap.*;
+import dev.malashenko.aggregator.core.source.kitsu.*;
 import dev.malashenko.aggregator.core.source.earthquake.usgs.*;
 import dev.malashenko.aggregator.core.source.hackernews.*;
 import dev.malashenko.aggregator.core.storage.*;
@@ -75,9 +75,9 @@ public class AggregatorBuilder {
 					new HackerNewsMapper(objectMapper)
 				);
 
-				case CRYPTOCURRENCY -> new CoinMarketCapHttpApiSource(
+				case ANIME -> new KitsuHttpApiSource(
 					httpResponder,
-					new CoinMarketCapMapper(objectMapper)
+					new KitsuMapper(objectMapper)
 				);
 
 				case EARTHQUAKE -> new EarthquakeUsgsHttpApiSource(

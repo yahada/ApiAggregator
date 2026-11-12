@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 public interface DataStorage {
-	public void saveData(List<DataRecord> data, WriteMode mode, Path file);
+	public void saveData(List<DataRecord> data, Path file);
 	public StorageFormat getStorageFormat();
 	public List<DataRecord> readData(Path file);
 	public List<DataRecord> readByApi(EntityType apiType, Path file);
