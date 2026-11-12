@@ -34,9 +34,7 @@ public class EarthquakeUsgsMapper implements ApiMapper {
 
 		List<DataRecord> records = new ArrayList<>();
 		for (JsonNode feature : root.path("features")) {
-			Map<String, Object> metrics = objectMapper.convertValue(
-				feature,
-				new TypeReference<Map<String, Object>>() {});
+			Map<String, Object> metrics = objectMapper.convertValue(feature, new TypeReference<>() {});
 
 			long timeMillis = feature.path("properties").path("time").asLong(0);
 			Optional<Instant> observedAt = (timeMillis == 0)

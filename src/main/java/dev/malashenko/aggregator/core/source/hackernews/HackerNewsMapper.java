@@ -34,7 +34,7 @@ public class HackerNewsMapper implements ApiMapper {
 
 		List<DataRecord> records = new ArrayList<>();
 		for (JsonNode hit : root.path("hits")) {
-			Map<String, Object> metrics = objectMapper.convertValue(hit, new TypeReference<Map<String, Object>>() {});
+			Map<String, Object> metrics = objectMapper.convertValue(hit, new TypeReference<>() {});
 
 			long createdAt = hit.path("created_at_i").asLong(0);
 			Optional<Instant> observedAt = (createdAt == 0)

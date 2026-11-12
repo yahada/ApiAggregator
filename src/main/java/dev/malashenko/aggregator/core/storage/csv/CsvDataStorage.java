@@ -7,7 +7,6 @@ import dev.malashenko.aggregator.core.exception.StorageException;
 import dev.malashenko.aggregator.core.model.DataRecord;
 import dev.malashenko.aggregator.core.model.EntityType;
 import dev.malashenko.aggregator.core.storage.DataStorage;
-import dev.malashenko.aggregator.core.storage.StorageFormat;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;

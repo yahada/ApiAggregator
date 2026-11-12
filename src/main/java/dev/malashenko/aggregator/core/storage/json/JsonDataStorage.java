@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.malashenko.aggregator.core.exception.StorageException;
 import dev.malashenko.aggregator.core.model.DataRecord;
 import dev.malashenko.aggregator.core.storage.DataStorage;
-import dev.malashenko.aggregator.core.storage.StorageFormat;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -62,7 +61,8 @@ public class JsonDataStorage implements DataStorage {
 		try {
 			return objectMapper.readValue(
 				path.toFile(),
-				new TypeReference<List<DataRecord>>() {}
+				new TypeReference<>() {
+				}
 			);
 
 		} catch (IOException e) {

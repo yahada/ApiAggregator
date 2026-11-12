@@ -35,9 +35,7 @@ public class KitsuMapper implements ApiMapper {
 
 		List<DataRecord> records = new ArrayList<>();
 		for (JsonNode item : root.path("data")) {
-			Map<String, Object> metrics = objectMapper.convertValue(
-				item.path("attributes"),
-				new TypeReference<Map<String, Object>>() {});
+			Map<String, Object> metrics = objectMapper.convertValue(item.path("attributes"), new TypeReference<>() {});
 
 			String entityId = item.path("id").asText();
 

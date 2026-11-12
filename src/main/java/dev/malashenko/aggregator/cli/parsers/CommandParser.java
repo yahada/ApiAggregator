@@ -43,7 +43,6 @@ public class CommandParser {
 		};
 	}
 
-	// ---------- data API=<name> [param=value ...] ----------
 
 	private DataCommandArgs parseData(Map<String, String> params) {
 		String api = requireApi(params);            // обязательно
@@ -67,7 +66,6 @@ public class CommandParser {
 		return new DataCommandArgs(api, entityType, new RequestParams(apiParams));
 	}
 
-	// ---------- show [API=<name>] ----------
 
 	private ShowCommandArgs parseShow(Map<String, String> params) {
 		List<String> unknown = params.keySet().stream()
