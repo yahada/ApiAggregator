@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'application'
+    id 'jacoco'
 }
 
 application {
@@ -19,10 +20,20 @@ repositories {
     mavenCentral()
 }
 
+configurations {
+    mockitoAgent {}
+}
+
 dependencies {
     testImplementation platform('org.junit:junit-bom:6.0.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    testImplementation 'org.mockito:mockito-core:5.14.2'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.14.2'
+    testRuntimeOnly 'net.bytebuddy:byte-buddy:1.18.17'
+
+    mockitoAgent 'org.mockito:mockito-core:5.14.2'
 
     compileOnly 'org.projectlombok:lombok:1.18.48'
     annotationProcessor 'org.projectlombok:lombok:1.18.48'
@@ -34,12 +45,41 @@ dependencies {
 
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.19.1'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.1'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.19.1'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.19.1'
     implementation 'org.apache.commons:commons-csv:1.11.0'
 
 
 }
 
+tasks.withType(Test) {
+    def mockitoJar = configurations.mockitoAgent.files.find { it.name.startsWith('mockito-core') }
+    jvmArgs "-javaagent:${mockitoJar}"
+}
+
 test {
     useJUnitPlatform()
+    finalizedBy jacocoTestReport, jacocoTestCoverageVerification
+}
+
+jacoco {
+    toolVersion = "0.8.16"
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.70
+            }
+        }
+    }
 }

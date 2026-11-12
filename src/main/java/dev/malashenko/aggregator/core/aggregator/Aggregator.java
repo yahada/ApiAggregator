@@ -20,7 +20,7 @@ public class Aggregator {
 	private final Map<EntityType, ApiSource> apiSourceMap;
 	private final Path outputPath;
 
-	Aggregator(DataStorage dataStorage, Map<EntityType, ApiSource> apiSourceMap, Path outputPath) {
+	public Aggregator(DataStorage dataStorage, Map<EntityType, ApiSource> apiSourceMap, Path outputPath) {
 		this.dataStorage = Objects.requireNonNull(dataStorage, "dataStorage must not be null");
 		this.apiSourceMap = Map.copyOf(apiSourceMap);
 		this.outputPath = Objects.requireNonNull(outputPath, "outputPath must not be null");
