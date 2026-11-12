@@ -1,18 +1,16 @@
 package dev.malashenko.aggregator.cli.parsers;
 
+import dev.malashenko.aggregator.cli.args.CommandArgs;
+import dev.malashenko.aggregator.cli.args.DataCommandArgs;
+import dev.malashenko.aggregator.cli.args.ShowCommandArgs;
 import dev.malashenko.aggregator.core.model.EntityType;
 import dev.malashenko.aggregator.core.model.RequestParams;
+import dev.malashenko.aggregator.core.model.SourceTypeRegistry;
 import dev.malashenko.aggregator.core.source.ApiSource;
 
 import java.util.*;
 
 public class CommandParser {
-
-	private static final Map<String, EntityType> SOURCE_TO_TYPE = Map.of(
-		"kitsu", EntityType.ANIME,
-		"usgs",          EntityType.EARTHQUAKE,
-		"hackernews",    EntityType.NEWS
-	);
 
 	private final Map<String, Set<String>> knownParamsByApi;
 
@@ -24,7 +22,6 @@ public class CommandParser {
 		this.knownParamsByApi = Map.copyOf(m);
 	}
 
-	/** для тестов */
 	public CommandParser(Map<String, Set<String>> knownParamsByApi) {
 		this.knownParamsByApi = Map.copyOf(knownParamsByApi);
 	}
@@ -50,16 +47,17 @@ public class CommandParser {
 
 	private DataCommandArgs parseData(Map<String, String> params) {
 		String api = requireApi(params);            // обязательно
-		EntityType entityType = SOURCE_TO_TYPE.get(api);
+		EntityType entityType = SourceTypeRegistry.of(api);
 		Set<String> known = knownParamsByApi.get(api);
 
 		Map<String, String> apiParams = new LinkedHashMap<>(params);
-		apiParams.remove("API");                    // убираем служебное
+		apiParams.remove("API");
 
 		List<String> unknown = apiParams.keySet().stream()
 			                       .filter(k -> !known.contains(k))
 			                       .sorted()
 			                       .toList();
+
 		if (!unknown.isEmpty()) {
 			throw new IllegalArgumentException(
 				"unknown parameters for API '" + api + "': " + unknown
@@ -83,11 +81,11 @@ public class CommandParser {
 
 		Optional<EntityType> entityType = Optional.ofNullable(params.get("API"))
 			                                  .map(api -> {
-				                                  EntityType t = SOURCE_TO_TYPE.get(api);
+				                                  EntityType t = SourceTypeRegistry.of(api);
 				                                  if (t == null) {
 					                                  throw new IllegalArgumentException(
 						                                  "unknown API: '" + api + "'; available: "
-							                                  + SOURCE_TO_TYPE.keySet());
+							                                  + SourceTypeRegistry.sourceNames());
 				                                  }
 				                                  return t;
 			                                  });
@@ -95,7 +93,6 @@ public class CommandParser {
 		return new ShowCommandArgs(entityType);
 	}
 
-	// ---------- helpers ----------
 
 	private String requireApi(Map<String, String> params) {
 		String api = params.get("API");
@@ -108,8 +105,7 @@ public class CommandParser {
 
 	private void requireApiExists(String api) {
 		if (!knownParamsByApi.containsKey(api)) {
-			throw new IllegalArgumentException(
-				"unknown API: '" + api + "'; available: " + knownParamsByApi.keySet());
+			throw new IllegalArgumentException("unknown API: '" + api + "'; available: " + knownParamsByApi.keySet());
 		}
 	}
 }

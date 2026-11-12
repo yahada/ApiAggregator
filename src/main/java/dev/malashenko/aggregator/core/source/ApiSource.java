@@ -10,5 +10,4 @@ public interface ApiSource {
 	String id();
 	Set<String> knownParams();
 	List<DataRecord> getApiRequest(RequestParams spec);
-
 }

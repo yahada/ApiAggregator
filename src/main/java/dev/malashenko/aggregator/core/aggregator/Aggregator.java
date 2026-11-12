@@ -5,7 +5,7 @@ import dev.malashenko.aggregator.core.model.EntityType;
 import dev.malashenko.aggregator.core.model.RequestParams;
 import dev.malashenko.aggregator.core.source.ApiSource;
 import dev.malashenko.aggregator.core.storage.DataStorage;
-import dev.malashenko.aggregator.core.storage.WriteMode;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -13,23 +13,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+@Slf4j
 public class Aggregator {
 
 	private final DataStorage dataStorage;
-	private final WriteMode writeMode;
 	private final Map<EntityType, ApiSource> apiSourceMap;
 	private final Path outputPath;
 
-	Aggregator(
-		DataStorage dataStorage,
-		WriteMode writeMode,
-		Map<EntityType, ApiSource> apiSourceMap,
-		Path outputPath
-	) {
-		this.dataStorage = Objects.requireNonNull(dataStorage);
-		this.writeMode = Objects.requireNonNull(writeMode);
+	Aggregator(DataStorage dataStorage, Map<EntityType, ApiSource> apiSourceMap, Path outputPath) {
+		this.dataStorage = Objects.requireNonNull(dataStorage, "dataStorage must not be null");
 		this.apiSourceMap = Map.copyOf(apiSourceMap);
-		this.outputPath = Objects.requireNonNull(outputPath);
+		this.outputPath = Objects.requireNonNull(outputPath, "outputPath must not be null");
 	}
 
 	public List<ApiSource> getApiSources() {
@@ -40,29 +34,30 @@ public class Aggregator {
 		ApiSource apiSource = apiSourceMap.get(apiType);
 
 		if (apiSource == null) {
-			throw new IllegalArgumentException(
-				"API source is not configured: " + apiType
-			);
+			throw new IllegalArgumentException("API source is not configured: " + apiType);
 		}
 
+		log.info("Making request to {} with params: {}", apiType, params);
 		List<DataRecord> records = apiSource.getApiRequest(params);
+		log.info("Received {} records from {}", records.size(), apiType);
 
 		dataStorage.saveData(records, outputPath);
+		log.info("Saved {} records to {}", records.size(), outputPath);
 	}
 
-	public void readData(Optional<EntityType> apiType) {
-		Objects.requireNonNull(apiType);
-
+	public List<DataRecord> readData(EntityType type) {
+		log.info("Reading data from {} for type: {}", outputPath, type);
 		List<DataRecord> records = dataStorage.readData(outputPath);
 
-		if (apiType.isPresent()) {
-			EntityType type = apiType.get();
-
-			records = records.stream()
-				          .filter(record -> record.entityType() == type)
-				          .toList();
+		if (type == null) {
+			log.info("Found {} total records", records.size());
+			return records;
 		}
 
-		records.forEach(System.out::println);
+		List<DataRecord> filtered = records.stream()
+			   .filter(record -> record.entityType() == type)
+			   .toList();
+		log.info("Found {} records of type {}", filtered.size(), type);
+		return filtered;
 	}
 }

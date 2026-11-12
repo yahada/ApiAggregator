@@ -9,12 +9,11 @@ import dev.malashenko.aggregator.core.model.DataRecord;
 import dev.malashenko.aggregator.core.model.EntityType;
 import dev.malashenko.aggregator.core.source.ApiMapper;
 
-import java.time.DateTimeException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class EarthquakeUsgsMapper implements ApiMapper {
 
@@ -35,14 +34,14 @@ public class EarthquakeUsgsMapper implements ApiMapper {
 
 		List<DataRecord> records = new ArrayList<>();
 		for (JsonNode feature : root.path("features")) {
-			// ВСЁ, что есть в feature — properties, geometry, id — как есть
 			Map<String, Object> metrics = objectMapper.convertValue(
 				feature,
 				new TypeReference<Map<String, Object>>() {});
 
-			// observedAt всё равно нужно достать отдельно — это поле DataRecord
-			Instant observedAt = Instant.ofEpochMilli(
-				feature.path("properties").path("time").asLong(0));
+			long timeMillis = feature.path("properties").path("time").asLong(0);
+			Optional<Instant> observedAt = (timeMillis == 0)
+				? Optional.empty()
+				: Optional.of(Instant.ofEpochMilli(timeMillis));
 
 			records.add(new DataRecord(
 				EarthquakeUsgsHttpApiSource.SOURCE_ID,

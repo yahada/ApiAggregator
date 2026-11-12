@@ -1,5 +1,6 @@
 package dev.malashenko.aggregator.core.http;
 
+
 import lombok.Getter;
 
 import java.time.Duration;
@@ -11,17 +12,12 @@ public class RetryPolicy {
 	private final Duration initialDelay;
 	private final Duration maxDelay;
 
-	public RetryPolicy(
-		int maxAttempts,
-		Duration initialDelay,
-		Duration maxDelay
-	) {
+	public RetryPolicy(int maxAttempts, Duration initialDelay, Duration maxDelay) {
 		if (maxAttempts < 1) {
 			throw new IllegalArgumentException("maxAttempts must be positive");
 		}
 
-		if (initialDelay.isNegative() || maxDelay.isNegative()
-			    || initialDelay.compareTo(maxDelay) > 0) {
+		if (initialDelay.isNegative() || maxDelay.isNegative() || initialDelay.compareTo(maxDelay) > 0) {
 			throw new IllegalArgumentException("Invalid delay configuration");
 		}
 
@@ -35,8 +31,6 @@ public class RetryPolicy {
 
 		Duration delay = initialDelay.multipliedBy(multiplier);
 
-		return delay.compareTo(maxDelay) > 0
-			       ? maxDelay
-			       : delay;
+		return delay.compareTo(maxDelay) > 0 ? maxDelay : delay;
 	}
 }

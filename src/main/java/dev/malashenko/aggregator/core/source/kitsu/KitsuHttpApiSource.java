@@ -44,7 +44,7 @@ public class KitsuHttpApiSource extends AbstractHttpApiSource {
 	@Override
 	protected RequestParams enrich(RequestParams params) {
 		Map<String, String> m = new LinkedHashMap<>(params.queryParams());
-		m.putIfAbsent("page[limit]", "10");   // дефолт, если не указан
+		m.putIfAbsent("page[limit]", "10");
 		return new RequestParams(m);
 	}
 }

@@ -1,4 +1,4 @@
-package dev.malashenko.aggregator.cli.parsers;
+package dev.malashenko.aggregator.cli.args;
 
 import dev.malashenko.aggregator.core.model.EntityType;
 import dev.malashenko.aggregator.core.storage.StorageFormat;

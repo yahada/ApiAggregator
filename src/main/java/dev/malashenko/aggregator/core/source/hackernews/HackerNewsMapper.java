@@ -11,12 +11,11 @@ import dev.malashenko.aggregator.core.source.ApiMapper;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class HackerNewsMapper implements ApiMapper {
-
 
 	private final ObjectMapper objectMapper;
 
@@ -35,11 +34,12 @@ public class HackerNewsMapper implements ApiMapper {
 
 		List<DataRecord> records = new ArrayList<>();
 		for (JsonNode hit : root.path("hits")) {
-			Map<String, Object> metrics = objectMapper.convertValue(
-				hit,
-				new TypeReference<Map<String, Object>>() {});
+			Map<String, Object> metrics = objectMapper.convertValue(hit, new TypeReference<Map<String, Object>>() {});
 
-			Instant observedAt = Instant.ofEpochSecond(hit.path("created_at_i").asLong(0));
+			long createdAt = hit.path("created_at_i").asLong(0);
+			Optional<Instant> observedAt = (createdAt == 0)
+				? Optional.empty()
+				: Optional.of(Instant.ofEpochSecond(createdAt));
 
 			records.add(new DataRecord(
 				HackerNewsHttpApiSource.SOURCE_ID,

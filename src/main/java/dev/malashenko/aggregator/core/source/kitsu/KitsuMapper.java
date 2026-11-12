@@ -14,6 +14,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class KitsuMapper implements ApiMapper {
 
@@ -34,35 +35,27 @@ public class KitsuMapper implements ApiMapper {
 
 		List<DataRecord> records = new ArrayList<>();
 		for (JsonNode item : root.path("data")) {
-			// ВСЕ поля из attributes, вложенность сохранена
 			Map<String, Object> metrics = objectMapper.convertValue(
 				item.path("attributes"),
 				new TypeReference<Map<String, Object>>() {});
 
-			// entityId = data[].id
 			String entityId = item.path("id").asText();
 
-			// observedAt: updatedAt из attributes, если есть; иначе now
-			Instant observedAt = parseInstant(metrics.get("updatedAt"));
+			Optional<Instant> observedAt = parseInstant(metrics.get("updatedAt"));
 
-			records.add(new DataRecord(
-				KitsuHttpApiSource.SOURCE_ID,
-				EntityType.ANIME,
-				entityId,
-				observedAt,
-				metrics));
+			records.add(new DataRecord(KitsuHttpApiSource.SOURCE_ID, EntityType.ANIME, entityId, observedAt, metrics));
 		}
 		return records;
 	}
 
-	private Instant parseInstant(Object value) {
+	private Optional<Instant> parseInstant(Object value) {
 		if (value == null) {
-			return Instant.now();
+			return Optional.empty();
 		}
 		try {
-			return Instant.parse(value.toString());
+			return Optional.of(Instant.parse(value.toString()));
 		} catch (DateTimeParseException e) {
-			return Instant.now();
+			return Optional.empty();
 		}
 	}
 }

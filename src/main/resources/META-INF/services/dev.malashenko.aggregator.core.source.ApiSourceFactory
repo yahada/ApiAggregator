@@ -1,0 +1,3 @@
+dev.malashenko.aggregator.core.source.hackernews.HackerNewsSourceFactory
+dev.malashenko.aggregator.core.source.kitsu.KitsuSourceFactory
+dev.malashenko.aggregator.core.source.earthquake.usgs.EarthquakeUsgsSourceFactory
