@@ -4,6 +4,7 @@ import dev.malashenko.aggregator.core.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -12,18 +13,21 @@ import java.time.Duration;
 @Slf4j
 public class HttpResponder {
 
-	private final HttpClient httpClient;
-	private final HttpRequestFactory requestFactory;
+	private static final HttpClient httpClient = HttpClient.newHttpClient();
 	private final RetryPolicy retryPolicy;
 
-	public HttpResponder(HttpClientProvider clientProvider, HttpRequestFactory requestFactory, RetryPolicy retryPolicy) {
-		this.httpClient = clientProvider.getHttpClientProvider();
-		this.requestFactory = requestFactory;
+	public HttpResponder(RetryPolicy retryPolicy) {
 		this.retryPolicy = retryPolicy;
 	}
 
-	public HttpResponse<String> getHttpResponse(String url) {
-		HttpRequest request = requestFactory.createGetRequest(url);
+	public static HttpResponder getResponder() {
+		RetryPolicy retryPolicy = new RetryPolicy(3, Duration.ofSeconds(1), Duration.ofSeconds(10));
+
+		return new HttpResponder(retryPolicy);
+	}
+
+	public String getResponse(String url) {
+		HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
 
 		for (int attempt = 1; attempt <= retryPolicy.getMaxAttempts(); attempt++) {
 			log.info("HTTP request attempt {}/{} to: {}", attempt, retryPolicy.getMaxAttempts(), url);
@@ -33,16 +37,15 @@ public class HttpResponder {
 				int statusCode = response.statusCode();
 
 				if (statusCode >= 400) {
-					log.error("HTTP error {} from URL: {}. Body: {}", statusCode, url, response.body());
 					throw new ApiException("HTTP " + statusCode + " from " + url + ": " + response.body());
 				}
 
 				log.info("Got response from URL: {}", url);
 
-				return response;
+				return response.body();
 
 			} catch (IOException e) {
-				log.error("Attempt {} failed. URL: {}. Error: {}", attempt, url, e.getMessage());
+				log.warn("Attempt {} failed. URL: {}. Error: {}", attempt, url, e.getMessage());
 
 				if (attempt == retryPolicy.getMaxAttempts()) {
 					throw new ApiException("Failed to get HTTP response from: " + url, e);

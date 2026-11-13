@@ -1,27 +1,55 @@
-package dev.malashenko.aggregator.core.source.kitsu;
+package dev.malashenko.aggregator.core.source;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.malashenko.aggregator.core.exception.ApiException;
+import dev.malashenko.aggregator.core.http.HttpResponder;
 import dev.malashenko.aggregator.core.model.DataRecord;
-import dev.malashenko.aggregator.core.model.EntityType;
-import dev.malashenko.aggregator.core.source.ApiMapper;
+import dev.malashenko.aggregator.core.model.RequestParams;
+import dev.malashenko.aggregator.core.tools.ObjectMapperBuilder;
 
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class KitsuMapper implements ApiMapper {
+public class KitsuHttpApiSource extends AbstractHttpApiSource {
+
+	public static final String SOURCE_ID = "kitsu";
+	private static final String ORIGIN_URL = "https://kitsu.io/api/edge/anime";
 
 	private final ObjectMapper objectMapper;
 
-	public KitsuMapper(ObjectMapper objectMapper) {
-		this.objectMapper = objectMapper;
+	public KitsuHttpApiSource(HttpResponder responder) {
+		super(responder);
+		this.objectMapper = ObjectMapperBuilder.buildDefault();
+	}
+
+	@Override
+	protected String originUrl() {
+		return ORIGIN_URL;
+	}
+
+	@Override
+	public String id() {
+		return SOURCE_ID;
+	}
+
+	@Override
+	public RequestParams defaultParams() {
+		return new RequestParams(Map.of("page[limit]", "5"));
+	}
+
+	@Override
+	protected RequestParams enrich(RequestParams params) {
+		Map<String, String> m = new LinkedHashMap<>(params.queryParams());
+		m.putIfAbsent("page[limit]", "10");
+		return new RequestParams(m);
 	}
 
 	@Override
@@ -41,7 +69,7 @@ public class KitsuMapper implements ApiMapper {
 
 			Optional<Instant> observedAt = parseInstant(metrics.get("updatedAt"));
 
-			records.add(new DataRecord(KitsuHttpApiSource.SOURCE_ID, EntityType.ANIME, entityId, observedAt, metrics));
+			records.add(new DataRecord(SOURCE_ID, entityId, observedAt, metrics));
 		}
 		return records;
 	}

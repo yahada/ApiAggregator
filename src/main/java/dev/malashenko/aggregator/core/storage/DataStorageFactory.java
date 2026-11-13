@@ -1,17 +1,19 @@
 package dev.malashenko.aggregator.core.storage;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.malashenko.aggregator.core.model.StorageFormat;
+import dev.malashenko.aggregator.core.tools.ObjectMapperBuilder;
 
-public class DataStorageFactory {
+public final class DataStorageFactory {
+	private static final ObjectMapper objectMapper = ObjectMapperBuilder.buildDefault();
+	private DataStorageFactory() {}
 
-	public static DataStorage getDataStorage(StorageFormat format, ObjectMapper om) {
-		return DataStorageRegistry.findAll().stream()
-			.filter(provider -> (provider.getFormat() == format))
-			.map(provider -> provider.create(om))
-			.findFirst()
-			.orElseThrow(() -> new IllegalArgumentException("Unsupported storage format: " + format));
+	public static DataStorage getDataStorage(StorageFormat format) {
+		return switch (format) {
+			case JSON -> new JsonDataStorage(objectMapper);
+			case CSV -> new CsvDataStorage(objectMapper);
+		};
 	}
-
 }
 
 

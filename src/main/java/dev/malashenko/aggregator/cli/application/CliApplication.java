@@ -1,28 +1,28 @@
 package dev.malashenko.aggregator.cli.application;
 
-import dev.malashenko.aggregator.cli.args.InitialArgs;
-import dev.malashenko.aggregator.cli.parsers.InitialArgsParser;
+import dev.malashenko.aggregator.cli.args.DataCommandArgs;
+import dev.malashenko.aggregator.cli.args.ShowCommandArgs;
+import dev.malashenko.aggregator.cli.parsers.DataCommandParser;
 import dev.malashenko.aggregator.cli.parsers.ShowCommandParser;
 import dev.malashenko.aggregator.core.aggregator.AggregateService;
-import dev.malashenko.aggregator.core.aggregator.Aggregator;
-import dev.malashenko.aggregator.core.aggregator.AggregatorBuilder;
+import dev.malashenko.aggregator.core.aggregator.DataAggregator;
 import dev.malashenko.aggregator.core.aggregator.OutputPathResolver;
+import dev.malashenko.aggregator.core.aggregator.ShowAggregator;
 import dev.malashenko.aggregator.core.exception.AppException;
 import dev.malashenko.aggregator.core.exception.ParsingException;
+import dev.malashenko.aggregator.core.http.HttpResponder;
 import dev.malashenko.aggregator.core.model.DataRecord;
-import dev.malashenko.aggregator.core.model.EntityType;
-import dev.malashenko.aggregator.core.model.SourceTypeRegistry;
 import dev.malashenko.aggregator.core.source.ApiSource;
+import dev.malashenko.aggregator.core.source.ApiSourceRegistry;
+import dev.malashenko.aggregator.core.storage.DataStorage;
 import dev.malashenko.aggregator.core.storage.DataStorageFactory;
-import dev.malashenko.aggregator.core.storage.StorageFormat;
-import dev.malashenko.aggregator.core.tools.ObjectMapperBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.file.Path;
-import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+
 
 @Slf4j
 public class CliApplication {
@@ -48,8 +48,6 @@ public class CliApplication {
 			return 2;
 		}
 
-
-
 		String command = args[0].toLowerCase();
 
 		return switch (command) {
@@ -68,51 +66,49 @@ public class CliApplication {
 			String[] remainingArgs = new String[args.length - 1];
 			System.arraycopy(args, 1, remainingArgs, 0, args.length - 1);
 
-			InitialArgsParser argsParser = new InitialArgsParser();
-			InitialArgs parsed = argsParser.getArgs(remainingArgs);
+			DataCommandArgs parsed = DataCommandParser.parse(remainingArgs);
 
-			new OutputFilePreparer().prepare(parsed);
+			OutputFilePreparer.prepare(parsed);
 
-			AggregatorBuilder builder = AggregatorBuilder.createDefault();
-			Aggregator aggregator = builder.buildAggregator(
-				parsed.apiList(),
-				parsed.format(),
-				parsed.writeMode(),
-				parsed.filename()
-			);
+			HttpResponder httpResponder = HttpResponder.getResponder();
 
-			runSurveyAndRequests(aggregator);
+			Map<String, ApiSource> allSources = ApiSourceRegistry.createAll(httpResponder);
+
+			Map<String, ApiSource> selected = new LinkedHashMap<>();
+			for (String name : parsed.sourceNames()) {
+				ApiSource source = allSources.get(name);
+				if (source == null) {
+					throw new ParsingException("unknown source: '" + name + "'");
+				}
+				selected.put(name, source);
+			}
+
+			DataStorage dataStorage = DataStorageFactory.getDataStorage(parsed.format());
+			Path outputPath = OutputPathResolver.resolve(parsed.filename(), parsed.format());
+
+			DataAggregator aggregator = new DataAggregator(dataStorage, allSources, outputPath);
+
+			runSurveyAndRequests(aggregator, selected);
 
 			return 0;
 
 		} catch (ParsingException e) {
-			log.error("error: {}", e.getMessage());
+			log.error("Data command parsing error: {}", e.getMessage());
 			log.error(USAGE_DATA);
 			return 2;
 		} catch (AppException e) {
-			log.error("error: {}", e.getMessage(), e);
+			log.error("Data command error: {}", e.getMessage(), e);
 			return 1;
 		}
 	}
 
-	private void runSurveyAndRequests(Aggregator aggregator) {
-		Map<EntityType, ApiSource> apiSourceMap = new EnumMap<>(EntityType.class);
-
-		for (ApiSource source : aggregator.getApiSources()) {
-			EntityType type = resolveEntityType(source.id());
-			apiSourceMap.put(type, source);
+	private void runSurveyAndRequests(DataAggregator aggregator, Map<String, ApiSource> selectedSources) {
+		for (Map.Entry<String, ApiSource> entry : selectedSources.entrySet()) {
+			ApiSource source = entry.getValue();
 			log.info("API: {} — default params: {}", source.id(), source.defaultParams());
 		}
 
-		new AggregateService(aggregator).aggregate(apiSourceMap);
-	}
-
-	private EntityType resolveEntityType(String sourceId) {
-		EntityType type = SourceTypeRegistry.of(sourceId);
-		if (type == null) {
-			throw new AppException("unknown source: '" + sourceId + "'");
-		}
-		return type;
+		AggregateService.aggregate(aggregator, selectedSources);
 	}
 
 	private int runShow(String[] args) {
@@ -120,31 +116,25 @@ public class CliApplication {
 			String[] remainingArgs = new String[args.length - 1];
 			System.arraycopy(args, 1, remainingArgs, 0, args.length - 1);
 
-			ShowCommandParser parser = new ShowCommandParser(remainingArgs);
-			String filename = parser.getFilename();
-			Optional<EntityType> apiFilter = parser.getApiFilter();
-			StorageFormat format = parser.detectFormat(filename);
+			ShowCommandArgs parsed = ShowCommandParser.parse(remainingArgs);
 
-			Aggregator aggregator = buildAggregatorForRead(filename, format);
-			List<DataRecord> records = aggregator.readData(apiFilter.orElse(null));
+			DataStorage dataStorage = DataStorageFactory.getDataStorage(parsed.format());
+			Path outputPath = OutputPathResolver.resolve(parsed.filename(), parsed.format());
+
+			ShowAggregator aggregator = new ShowAggregator(dataStorage, outputPath);
+			List<DataRecord> records = aggregator.readData(parsed.apiFilter().orElse(null));
 
 			new RecordPrinter().printAll(records);
 
 			return 0;
 
 		} catch (ParsingException e) {
-			log.error("error: {}", e.getMessage());
+			log.error("Show command parsing error: {}", e.getMessage());
 			log.error(USAGE_SHOW);
 			return 2;
 		} catch (AppException e) {
-			log.error("error: {}", e.getMessage(), e);
+			log.error("Show command  error: {}", e.getMessage(), e);
 			return 1;
 		}
-	}
-
-	private Aggregator buildAggregatorForRead(String filename, StorageFormat format) {
-		var dataStorage = DataStorageFactory.getDataStorage(format, ObjectMapperBuilder.buildDefault());
-		Path outputPath = new OutputPathResolver().resolve(filename, format);
-		return new Aggregator(dataStorage, new EnumMap<>(EntityType.class), outputPath);
 	}
 }

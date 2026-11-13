@@ -1,12 +1,10 @@
 
-package dev.malashenko.aggregator.core.storage.csv;
+package dev.malashenko.aggregator.core.storage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.malashenko.aggregator.core.exception.StorageException;
 import dev.malashenko.aggregator.core.model.DataRecord;
-import dev.malashenko.aggregator.core.model.EntityType;
-import dev.malashenko.aggregator.core.storage.DataStorage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -30,7 +28,7 @@ import java.util.Optional;
 public class CsvDataStorage implements DataStorage {
 
 	private static final String[] HEADER = {
-		"source", "entity_type", "entity_id", "observed_at", "metrics"
+		"source", "entity_id", "observed_at", "metrics"
 	};
 
 	private final ObjectMapper objectMapper;
@@ -60,7 +58,6 @@ public class CsvDataStorage implements DataStorage {
 				for (DataRecord record : data) {
 					printer.printRecord(
 						record.source(),
-						record.entityType().name(),
 						record.entityId(),
 						record.observedAt().map(Instant::toString).orElse(""),
 						objectMapper.writeValueAsString(record.metrics())
@@ -69,7 +66,6 @@ public class CsvDataStorage implements DataStorage {
 			}
 
 		} catch (IOException e) {
-			log.error("Failed to write CSV to {}", path, e);
 			throw new StorageException("Failed to write CSV to " + path + ": " + e.getMessage(), e);
 		}
 	}
@@ -92,11 +88,7 @@ public class CsvDataStorage implements DataStorage {
 			                        .parse(reader)) {
 
 			for (CSVRecord row : parser) {
-				Map<String, Object> metrics = objectMapper.readValue(
-					row.get("metrics"),
-					new TypeReference<>() {
-					}
-				);
+				Map<String, Object> metrics = objectMapper.readValue(row.get("metrics"), new TypeReference<>() {});
 
 				String observedAtStr = row.get("observed_at");
 				Optional<Instant> observedAt = observedAtStr.isEmpty()
@@ -105,7 +97,6 @@ public class CsvDataStorage implements DataStorage {
 
 				records.add(new DataRecord(
 					row.get("source"),
-					EntityType.valueOf(row.get("entity_type")),
 					row.get("entity_id"),
 					observedAt,
 					metrics
@@ -115,9 +106,7 @@ public class CsvDataStorage implements DataStorage {
 			return records;
 
 		} catch (IOException | IllegalArgumentException e) {
-			log.error("Failed to read CSV from {}", path, e);
-			throw new StorageException(
-				"Failed to read CSV from " + path + ": " + e.getMessage(), e);
+			throw new StorageException("Failed to read CSV from " + path + ": " + e.getMessage(), e);
 		}
 	}
 }

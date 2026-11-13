@@ -1,11 +1,10 @@
 
-package dev.malashenko.aggregator.core.storage.json;
+package dev.malashenko.aggregator.core.storage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.malashenko.aggregator.core.exception.StorageException;
 import dev.malashenko.aggregator.core.model.DataRecord;
-import dev.malashenko.aggregator.core.storage.DataStorage;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -38,14 +37,10 @@ public class JsonDataStorage implements DataStorage {
 
 			toWrite.addAll(data);
 
-			objectMapper.writerWithDefaultPrettyPrinter()
-				.writeValue(path.toFile(), toWrite);
+			objectMapper.writerWithDefaultPrettyPrinter().writeValue(path.toFile(), toWrite);
 
 		} catch (IOException e) {
-			log.error("Failed to write JSON to {}", path, e);
-			throw new StorageException(
-				"Failed to write JSON to " + path + ": " + e.getMessage(), e
-			);
+			throw new StorageException("Failed to write JSON to " + path + ": " + e.getMessage(), e);
 		}
 	}
 
@@ -59,17 +54,9 @@ public class JsonDataStorage implements DataStorage {
 
 		log.info("Reading JSON from: {}", path);
 		try {
-			return objectMapper.readValue(
-				path.toFile(),
-				new TypeReference<>() {
-				}
-			);
-
+			return objectMapper.readValue(path.toFile(), new TypeReference<List<DataRecord>>() {});
 		} catch (IOException e) {
-			log.error("Failed to read JSON from {}", path, e);
-			throw new StorageException(
-				"Failed to read JSON from " + path + ": " + e.getMessage(), e
-			);
+			throw new StorageException("Failed to read JSON from " + path + ": " + e.getMessage(), e);
 		}
 	}
 

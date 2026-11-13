@@ -7,6 +7,6 @@ import java.util.List;
 public class RecordPrinter {
 
 	public void printAll(List<DataRecord> records) {
-		records.forEach(record -> System.out.println(record.toString()));
+		records.forEach(record -> System.out.println(record.source() + "|" + record.entityId() + "|" + record.metrics()));
 	}
 }

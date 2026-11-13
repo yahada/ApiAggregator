@@ -1,14 +1,14 @@
 package dev.malashenko.aggregator.core.aggregator;
 
 import dev.malashenko.aggregator.core.exception.ParsingException;
-import dev.malashenko.aggregator.core.storage.StorageFormat;
+import dev.malashenko.aggregator.core.model.StorageFormat;
 import dev.malashenko.aggregator.core.tools.FileExtension;
 
 import java.nio.file.Path;
 
 public class OutputPathResolver {
 
-	public Path resolve(String filename, StorageFormat storageFormat) {
+	public static Path resolve(String filename, StorageFormat storageFormat) {
 		String expectedExtension = FileExtension.formatOf(storageFormat);
 
 		if (filename == null || filename.isBlank()) {

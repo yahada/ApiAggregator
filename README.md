@@ -94,7 +94,6 @@
 | Поле | Тип | Описание |
 |------|-----|----------|
 | `source` | `String` | Идентификатор источника (`usgs`, `hackernews`, `kitsu`) |
-| `entityType` | `EntityType` | Тип сущности (`EARTHQUAKE`, `NEWS`, `ANIME`) |
 | `entityId` | `String` | Уникальный идентификатор записи в источнике |
 | `observedAt` | `Optional<Instant>` | Время события (если доступно) |
 | `metrics` | `Map<String, Object>` | Произвольные метрики (магнитуда, рейтинг, заголовок и т.д.) |
@@ -103,15 +102,15 @@
 
 Проект разделён на слои для соблюдения принципов ООП и разделения ответственности:
 
-* **`cli`** — командная строка: парсинг аргументов (`InitialArgsParser`, `ShowCommandParser`), диспетчеризация команд (`CliApplication`), вывод данных (`RecordPrinter`), подготовка файлов (`OutputFilePreparer`).
-* **`core.aggregator`** — бизнес-логика: `Aggregator` координирует запросы и хранение, `AggregateService` обрабатывает ошибки при опросе источников, `AggregatorBuilder` собирает зависимости.
-* **`core.source`** — реализации `ApiSource` для каждого API (Стратегия), зарегистрированные через `ServiceLoader`; `AbstractHttpApiSource` обеспечивает шаблонный метод запроса.
+* **`cli`** — командная строка: парсинг аргументов (`DataCommandParser`, `ShowCommandParser`), диспетчеризация команд (`CliApplication`), вывод данных (`RecordPrinter`), подготовка файлов (`OutputFilePreparer`).
+* **`core.aggregator`** — бизнес-логика: `DataAggregator` выполняет запросы к API и сохраняет данные, `ShowAggregator` читает и фильтрует данные из файла, `AggregateService` обрабатывает ошибки при опросе источников, `OutputPathResolver` разрешает пути файлов.
+* **`core.source`** — реализации `ApiSource` для каждого API (Стратегия); `ApiSourceRegistry` создаёт карту всех доступных источников; `AbstractHttpApiSource` обеспечивает шаблонный метод запроса.
 * **`core.http`** — HTTP-слой: `HttpResponder` выполняет запросы с retry-политикой, `HttpRequestFactory` создаёт запросы, `RetryPolicy` управляет повторами.
-* **`core.storage`** — интерфейс `DataStorage` и реализации `JsonDataStorage`, `CsvDataStorage`; формат определяется по расширению файла.
-* **`core.model`** — модель данных `DataRecord`, типы сущностей `EntityType`, параметры запроса `RequestParams`, регистр источников `SourceTypeRegistry`.
+* **`core.storage`** — интерфейс `DataStorage` и реализации `JsonDataStorage`, `CsvDataStorage`; `DataStorageFactory` создаёт хранилище по формату (JSON/CSV).
+* **`core.model`** — модель данных `DataRecord`, параметры запроса `RequestParams`.
 * **`core.exception`** — иерархия исключений: `AppException` → `ParsingException`, `ApiException`, `StorageException`.
 
-*Новый API добавляется созданием нового класса, реализующего `ApiSource`, без изменения существующей логики (OCP).*
+*Новый API добавляется созданием нового класса, реализующего `ApiSource`, и регистрацией его в `ApiSourceRegistry`.*
 
 ## Сборка и запуск
 

@@ -1,8 +1,8 @@
 package dev.malashenko.aggregator.cli.application;
 
-import dev.malashenko.aggregator.cli.args.InitialArgs;
+import dev.malashenko.aggregator.cli.args.DataCommandArgs;
 import dev.malashenko.aggregator.core.exception.AppException;
-import dev.malashenko.aggregator.core.storage.WriteMode;
+import dev.malashenko.aggregator.core.model.WriteMode;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -13,7 +13,7 @@ import java.nio.file.StandardOpenOption;
 @Slf4j
 public class OutputFilePreparer {
 
-	public void prepare(InitialArgs args) {
+	public static void prepare(DataCommandArgs args) {
 		Path path = Path.of(args.filename());
 
 		try {
@@ -42,7 +42,6 @@ public class OutputFilePreparer {
 			}
 
 		} catch (IOException e) {
-			log.error("Failed to prepare file: {}", path, e);
 			throw new AppException("Failed to prepare file: " + path, e);
 		}
 	}

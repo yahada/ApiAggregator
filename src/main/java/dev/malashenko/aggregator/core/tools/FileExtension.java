@@ -1,8 +1,6 @@
 package dev.malashenko.aggregator.core.tools;
 
-import dev.malashenko.aggregator.core.storage.StorageFormat;
-
-import java.nio.file.Path;
+import dev.malashenko.aggregator.core.model.StorageFormat;
 
 public class FileExtension {
 

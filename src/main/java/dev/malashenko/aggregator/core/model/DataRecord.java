@@ -6,7 +6,6 @@ import java.util.Optional;
 
 public record DataRecord(
 	String source,
-	EntityType entityType,
 	String entityId,
 	Optional<Instant> observedAt,
 	Map<String, Object> metrics

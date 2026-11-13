@@ -1,11 +1,10 @@
 package dev.malashenko.aggregator.cli.parsers;
 
-import dev.malashenko.aggregator.cli.args.InitialArgs;
+import dev.malashenko.aggregator.cli.args.DataCommandArgs;
 import dev.malashenko.aggregator.core.exception.ParsingException;
-import dev.malashenko.aggregator.core.model.EntityType;
-import dev.malashenko.aggregator.core.model.SourceTypeRegistry;
-import dev.malashenko.aggregator.core.storage.StorageFormat;
-import dev.malashenko.aggregator.core.storage.WriteMode;
+import dev.malashenko.aggregator.core.source.ApiSourceRegistry;
+import dev.malashenko.aggregator.core.model.StorageFormat;
+import dev.malashenko.aggregator.core.model.WriteMode;
 import dev.malashenko.aggregator.core.tools.FileExtension;
 
 import java.util.Arrays;
@@ -13,12 +12,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class InitialArgsParser {
+public class DataCommandParser {
 
-	public InitialArgs getArgs(String[] args) {
+	public static DataCommandArgs parse(String[] args) {
 		Map<String, String> params = parseNameValue(args);
 
-		List<EntityType> apiList = parseEntityTypes(require(params, "sources"));
+		List<String> sourceNames = parseSourceNames(require(params, "sources"));
 
 		StorageFormat format     = parseStorageFormat(require(params, "format"));
 
@@ -26,11 +25,11 @@ public class InitialArgsParser {
 
 		String filename = params.getOrDefault("file", "out." + FileExtension.formatOf(format));
 
-		return new InitialArgs(apiList, format, writeMode, filename);
+		return new DataCommandArgs(sourceNames, format, writeMode, filename);
 	}
 
 
-	 static Map<String, String> parseNameValue(String[] args) {
+	 private static Map<String, String> parseNameValue(String[] args) {
 		Map<String, String> result = new LinkedHashMap<>();
 		for (String arg : args) {
 
@@ -52,24 +51,23 @@ public class InitialArgsParser {
 		return result;
 	}
 
-	 static List<EntityType> parseEntityTypes(String raw) {
+	private static List<String> parseSourceNames(String raw) {
 		return Arrays.stream(raw.split(","))
 			       .map(String::trim)
 			       .filter(s -> !s.isEmpty())
-			       .map(InitialArgsParser::toEntityType)
+			       .map(String::toLowerCase)
+			       .peek(DataCommandParser::validateSource)
 			       .toList();
 	}
 
-	 static EntityType toEntityType(String s) {
-		EntityType t = SourceTypeRegistry.of(s.toLowerCase());
-		if (t == null) {
-			throw new ParsingException("unknown source: '" + s + "'; available: " + SourceTypeRegistry.sourceNames());
+	private static void validateSource(String name) {
+		if (!ApiSourceRegistry.SOURCE_NAMES.contains(name)) {
+			throw new ParsingException("unknown source: '" + name + "'; available: " + ApiSourceRegistry.SOURCE_NAMES);
 		}
-		return t;
 	}
 
 
-	 static StorageFormat parseStorageFormat(String s) {
+	private static StorageFormat parseStorageFormat(String s) {
 		return switch (s.toLowerCase()) {
 			case "csv"  -> StorageFormat.CSV;
 			case "json" -> StorageFormat.JSON;
@@ -77,7 +75,7 @@ public class InitialArgsParser {
 		};
 	}
 
-	 static WriteMode parseWriteMode(String s) {
+	private static WriteMode parseWriteMode(String s) {
 		return switch (s.toLowerCase()) {
 			case "new"    -> WriteMode.NEW;
 			case "append" -> WriteMode.APPEND;
@@ -85,7 +83,7 @@ public class InitialArgsParser {
 		};
 	}
 
-	 static String require(Map<String, String> params, String key) {
+	private static String require(Map<String, String> params, String key) {
 		String v = params.get(key);
 		if (v == null || v.isBlank()) {
 			throw new ParsingException("missing required argument: " + key + "; expected: sources=... format=... mode=...");

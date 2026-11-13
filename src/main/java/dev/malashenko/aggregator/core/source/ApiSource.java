@@ -10,4 +10,5 @@ public interface ApiSource {
 	String id();
 	RequestParams defaultParams();
 	List<DataRecord> getApiRequest(RequestParams spec);
+	List<DataRecord> map(String json);
 }
