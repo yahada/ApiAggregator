@@ -1,6 +1,6 @@
 package dev.malashenko.aggregator.core.http;
 
-
+import dev.malashenko.aggregator.core.exception.AppException;
 import lombok.Getter;
 
 import java.time.Duration;
@@ -14,11 +14,11 @@ public class RetryPolicy {
 
 	public RetryPolicy(int maxAttempts, Duration initialDelay, Duration maxDelay) {
 		if (maxAttempts < 1) {
-			throw new IllegalArgumentException("maxAttempts must be positive");
+			throw new AppException("maxAttempts must be positive");
 		}
 
 		if (initialDelay.isNegative() || maxDelay.isNegative() || initialDelay.compareTo(maxDelay) > 0) {
-			throw new IllegalArgumentException("Invalid delay configuration");
+			throw new AppException("Invalid delay configuration");
 		}
 
 		this.maxAttempts = maxAttempts;

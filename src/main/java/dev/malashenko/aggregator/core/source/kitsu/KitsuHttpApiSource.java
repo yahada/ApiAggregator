@@ -28,17 +28,8 @@ public class KitsuHttpApiSource extends AbstractHttpApiSource {
 	}
 
 	@Override
-	public Set<String> knownParams() {
-		return Set.of(
-			"filter[text]",
-			"filter[status]",
-			"filter[season]",
-			"filter[seasonYear]",
-			"filter[subtype]",
-			"page[limit]",
-			"page[offset]",
-			"sort"
-		);
+	public RequestParams defaultParams() {
+		return new RequestParams(Map.of("page[limit]", "5"));
 	}
 
 	@Override

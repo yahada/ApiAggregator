@@ -1,6 +1,6 @@
 package dev.malashenko.aggregator.core.exception;
 
-public class StorageException extends RuntimeException{
+public class StorageException extends AppException {
 	public StorageException(String message) {
 		super(message);
 	}

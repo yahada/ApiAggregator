@@ -1,5 +1,6 @@
 package dev.malashenko.aggregator.core.aggregator;
 
+import dev.malashenko.aggregator.core.exception.AppException;
 import dev.malashenko.aggregator.core.model.DataRecord;
 import dev.malashenko.aggregator.core.model.EntityType;
 import dev.malashenko.aggregator.core.model.RequestParams;
@@ -33,7 +34,7 @@ public class Aggregator {
 		ApiSource apiSource = apiSourceMap.get(apiType);
 
 		if (apiSource == null) {
-			throw new IllegalArgumentException("API source is not configured: " + apiType);
+			throw new AppException("API source is not configured: " + apiType);
 		}
 
 		log.info("Making request to {} with params: {}", apiType, params);

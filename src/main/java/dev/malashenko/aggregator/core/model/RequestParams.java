@@ -2,6 +2,4 @@ package dev.malashenko.aggregator.core.model;
 
 import java.util.Map;
 
-public record RequestParams(Map<String, String> queryParams) {
-
-}
+public record RequestParams(Map<String, String> queryParams) {}

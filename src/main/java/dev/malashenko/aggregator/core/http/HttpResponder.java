@@ -1,5 +1,6 @@
 package dev.malashenko.aggregator.core.http;
 
+import dev.malashenko.aggregator.core.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -33,7 +34,7 @@ public class HttpResponder {
 
 				if (statusCode >= 400) {
 					log.error("HTTP error {} from URL: {}. Body: {}", statusCode, url, response.body());
-					throw new IllegalStateException("HTTP " + statusCode + " from " + url + ": " + response.body());
+					throw new ApiException("HTTP " + statusCode + " from " + url + ": " + response.body());
 				}
 
 				log.info("Got response from URL: {}", url);
@@ -44,7 +45,7 @@ public class HttpResponder {
 				log.error("Attempt {} failed. URL: {}. Error: {}", attempt, url, e.getMessage());
 
 				if (attempt == retryPolicy.getMaxAttempts()) {
-					throw new IllegalStateException("Failed to get HTTP response from: " + url, e);
+					throw new ApiException("Failed to get HTTP response from: " + url, e);
 				}
 
 				waitBeforeRetry(retryPolicy.getDelay(attempt));
@@ -52,12 +53,11 @@ public class HttpResponder {
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 
-				log.error("HTTP request was interrupted: {}", url, e);
-				throw new IllegalStateException("HTTP request was interrupted: " + url, e);
+				throw new ApiException("HTTP request was interrupted: " + url, e);
 			}
 		}
 
-		throw new IllegalStateException("Unexpected retry state");
+		throw new ApiException("Unexpected retry state");
 	}
 
 	private void waitBeforeRetry(Duration delay) {
@@ -66,8 +66,7 @@ public class HttpResponder {
 			Thread.sleep(delay.toMillis());
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
-			log.error("Retry was interrupted", e);
-			throw new IllegalStateException("Retry was interrupted", e);
+			throw new ApiException("Retry was interrupted", e);
 		}
 	}
 }

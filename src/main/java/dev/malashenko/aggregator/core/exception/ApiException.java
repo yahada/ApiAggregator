@@ -1,6 +1,6 @@
 package dev.malashenko.aggregator.core.exception;
 
-public class ApiException extends RuntimeException {
+public class ApiException extends AppException {
 	public ApiException(String message) {
 		super(message);
 	}

@@ -27,8 +27,8 @@ public class EarthquakeUsgsHttpApiSource extends AbstractHttpApiSource {
 	}
 
 	@Override
-	public Set<String> knownParams() {
-		return Set.of("minmagnitude", "maxmagnitude", "limit", "orderby", "starttime", "endtime", "latitude", "longitude", "maxradiuskm", "eventtype");
+	public RequestParams defaultParams() {
+		return new RequestParams(Map.of("limit", "5", "orderby", "time"));
 	}
 
 	@Override

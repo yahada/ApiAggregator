@@ -17,14 +17,6 @@ public class FileExtension {
 		return filename.substring(dot + 1).toLowerCase();
 	}
 
-	public static StorageFormat formatOf(String filename) {
-		return switch (extension(filename)) {
-			case "json" -> StorageFormat.JSON;
-			case "csv" -> StorageFormat.CSV;
-			default -> null;
-		};
-	}
-
 	public static String formatOf(StorageFormat storageFormat) {
 		return switch (storageFormat) {
 			case StorageFormat.JSON -> "json";

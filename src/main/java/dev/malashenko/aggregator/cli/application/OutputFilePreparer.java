@@ -1,6 +1,7 @@
 package dev.malashenko.aggregator.cli.application;
 
 import dev.malashenko.aggregator.cli.args.InitialArgs;
+import dev.malashenko.aggregator.core.exception.AppException;
 import dev.malashenko.aggregator.core.storage.WriteMode;
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,7 +43,7 @@ public class OutputFilePreparer {
 
 		} catch (IOException e) {
 			log.error("Failed to prepare file: {}", path, e);
-			throw new RuntimeException("Failed to prepare file: " + path, e);
+			throw new AppException("Failed to prepare file: " + path, e);
 		}
 	}
 }

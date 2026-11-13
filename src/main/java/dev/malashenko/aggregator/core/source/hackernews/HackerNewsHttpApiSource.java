@@ -4,6 +4,7 @@ import dev.malashenko.aggregator.core.http.HttpResponder;
 import dev.malashenko.aggregator.core.model.RequestParams;
 import dev.malashenko.aggregator.core.source.AbstractHttpApiSource;
 
+import java.util.Map;
 import java.util.Set;
 
 public class HackerNewsHttpApiSource extends AbstractHttpApiSource {
@@ -25,8 +26,8 @@ public class HackerNewsHttpApiSource extends AbstractHttpApiSource {
 	}
 
 	@Override
-	public Set<String> knownParams() {
-		return Set.of("query", "tags", "hitsPerPage", "page", "numericFilters", "restrictSearchableAttributes");
+	public RequestParams defaultParams() {
+		return new RequestParams(Map.of("query", "java", "hitsPerPage", "5"));
 	}
 
 	@Override

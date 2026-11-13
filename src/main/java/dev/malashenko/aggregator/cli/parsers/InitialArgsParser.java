@@ -1,6 +1,7 @@
 package dev.malashenko.aggregator.cli.parsers;
 
 import dev.malashenko.aggregator.cli.args.InitialArgs;
+import dev.malashenko.aggregator.core.exception.ParsingException;
 import dev.malashenko.aggregator.core.model.EntityType;
 import dev.malashenko.aggregator.core.model.SourceTypeRegistry;
 import dev.malashenko.aggregator.core.storage.StorageFormat;
@@ -23,7 +24,7 @@ public class InitialArgsParser {
 
 		WriteMode writeMode      = parseWriteMode(require(params, "mode"));
 
-		String filename          = params.get("file");
+		String filename = params.getOrDefault("file", "out." + FileExtension.formatOf(format));
 
 		return new InitialArgs(apiList, format, writeMode, filename);
 	}
@@ -37,14 +38,14 @@ public class InitialArgsParser {
 			int eq = cleaned.indexOf('=');
 
 			if (eq <= 0 || eq == cleaned.length() - 1) {
-				throw new IllegalArgumentException("bad argument: '" + arg + "' (expected name=value)");
+ 			throw new ParsingException("bad argument: '" + arg + "' (expected name=value)");
 			}
 
 			String key = cleaned.substring(0, eq).trim();
 			String value = cleaned.substring(eq + 1).trim();
 
 			if (key.isEmpty() || value.isEmpty()) {
-				throw new IllegalArgumentException("bad argument: '" + arg + "' (empty name or value)");
+ 			throw new ParsingException("bad argument: '" + arg + "' (empty name or value)");
 			}
 			result.put(key, value);
 		}
@@ -62,7 +63,7 @@ public class InitialArgsParser {
 	 static EntityType toEntityType(String s) {
 		EntityType t = SourceTypeRegistry.of(s.toLowerCase());
 		if (t == null) {
-			throw new IllegalArgumentException("unknown source: '" + s + "'; available: " + SourceTypeRegistry.sourceNames());
+			throw new ParsingException("unknown source: '" + s + "'; available: " + SourceTypeRegistry.sourceNames());
 		}
 		return t;
 	}
@@ -72,8 +73,7 @@ public class InitialArgsParser {
 		return switch (s.toLowerCase()) {
 			case "csv"  -> StorageFormat.CSV;
 			case "json" -> StorageFormat.JSON;
-			default -> throw new IllegalArgumentException(
-				"unknown format: '" + s + "' (csv|json)");
+			default -> throw new ParsingException("unknown format: '" + s + "' (csv|json)");
 		};
 	}
 
@@ -81,17 +81,14 @@ public class InitialArgsParser {
 		return switch (s.toLowerCase()) {
 			case "new"    -> WriteMode.NEW;
 			case "append" -> WriteMode.APPEND;
-			default -> throw new IllegalArgumentException(
-				"unknown mode: '" + s + "' (new|append)");
+			default -> throw new ParsingException("unknown mode: '" + s + "' (new|append)");
 		};
 	}
 
 	 static String require(Map<String, String> params, String key) {
 		String v = params.get(key);
 		if (v == null || v.isBlank()) {
-			throw new IllegalArgumentException(
-				"missing required argument: " + key +
-					"; expected: sources=... format=... mode=...");
+			throw new ParsingException("missing required argument: " + key + "; expected: sources=... format=... mode=...");
 		}
 		return v;
 	}

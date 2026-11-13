@@ -8,6 +8,6 @@ import java.util.Set;
 
 public interface ApiSource {
 	String id();
-	Set<String> knownParams();
+	RequestParams defaultParams();
 	List<DataRecord> getApiRequest(RequestParams spec);
 }

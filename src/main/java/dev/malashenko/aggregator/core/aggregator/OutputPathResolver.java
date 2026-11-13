@@ -1,5 +1,6 @@
 package dev.malashenko.aggregator.core.aggregator;
 
+import dev.malashenko.aggregator.core.exception.ParsingException;
 import dev.malashenko.aggregator.core.storage.StorageFormat;
 import dev.malashenko.aggregator.core.tools.FileExtension;
 
@@ -20,7 +21,7 @@ public class OutputPathResolver {
 		}
 
 		if (!actualExtension.equalsIgnoreCase(expectedExtension)) {
-			throw new IllegalArgumentException(
+			throw new ParsingException(
 				"File extension '" + actualExtension + "' does not match format '"
 				+ expectedExtension + "'. Expected: " + filename + "." + expectedExtension
 			);
