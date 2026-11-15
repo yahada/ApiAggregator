@@ -2,17 +2,18 @@ package dev.malashenko.aggregator;
 
 import dev.malashenko.aggregator.cli.application.CliApplication;
 import dev.malashenko.aggregator.core.exception.AppException;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Slf4j
 public class Main {
-
-	private static final Logger log = LoggerFactory.getLogger(Main.class);
 
 	public static void main(String[] args) {
 		try {
 			CliApplication application = new CliApplication();
 			int exitCode = application.run(args);
+			log.info("Finished with code {}", exitCode);
 			if (exitCode != 0) {
 				System.exit(exitCode);
 			}

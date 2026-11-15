@@ -1,6 +1,6 @@
 package dev.malashenko.aggregator.core.http;
 
-import dev.malashenko.aggregator.core.exception.ApiException;
+import dev.malashenko.aggregator.core.exception.HttpException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -37,7 +37,7 @@ public class HttpResponder {
 				int statusCode = response.statusCode();
 
 				if (statusCode >= 400) {
-					throw new ApiException("HTTP " + statusCode + " from " + url + ": " + response.body());
+					throw new HttpException("HTTP " + statusCode + " from " + url + ": " + response.body());
 				}
 
 				log.info("Got response from URL: {}", url);
@@ -48,7 +48,7 @@ public class HttpResponder {
 				log.warn("Attempt {} failed. URL: {}. Error: {}", attempt, url, e.getMessage());
 
 				if (attempt == retryPolicy.getMaxAttempts()) {
-					throw new ApiException("Failed to get HTTP response from: " + url, e);
+					throw new HttpException("Failed to get HTTP response from: " + url, e);
 				}
 
 				waitBeforeRetry(retryPolicy.getDelay(attempt));
@@ -56,11 +56,11 @@ public class HttpResponder {
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 
-				throw new ApiException("HTTP request was interrupted: " + url, e);
+				throw new HttpException("HTTP request was interrupted: " + url, e);
 			}
 		}
 
-		throw new ApiException("Unexpected retry state");
+		throw new HttpException("Unexpected retry state");
 	}
 
 	private void waitBeforeRetry(Duration delay) {
@@ -69,7 +69,7 @@ public class HttpResponder {
 			Thread.sleep(delay.toMillis());
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
-			throw new ApiException("Retry was interrupted", e);
+			throw new HttpException("Retry was interrupted", e);
 		}
 	}
 }
