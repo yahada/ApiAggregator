@@ -5,21 +5,12 @@ import dev.malashenko.aggregator.cli.args.ShowCommandArgs;
 import dev.malashenko.aggregator.cli.parsers.DataCommandParser;
 import dev.malashenko.aggregator.cli.parsers.ShowCommandParser;
 import dev.malashenko.aggregator.core.aggregator.Aggregator;
-import dev.malashenko.aggregator.core.aggregator.OutputPathResolver;
 import dev.malashenko.aggregator.core.exception.AppException;
 import dev.malashenko.aggregator.core.exception.ParsingException;
-import dev.malashenko.aggregator.core.http.HttpResponder;
 import dev.malashenko.aggregator.core.model.DataRecord;
-import dev.malashenko.aggregator.core.source.ApiSource;
-import dev.malashenko.aggregator.core.source.ApiSourceRegistry;
-import dev.malashenko.aggregator.core.storage.DataStorage;
-import dev.malashenko.aggregator.core.storage.DataStorageFactory;
 import lombok.extern.slf4j.Slf4j;
 
-import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
-
 
 @Slf4j
 public class CliApplication {
@@ -35,6 +26,8 @@ public class CliApplication {
 			  show  — display records from a saved file
 			
 			Run a command with invalid arguments to see its detailed usage.""";
+
+	private final AppFactory appFactory = new AppFactory();
 
 	public int run(String[] args) {
 		if (args.length == 0) {
@@ -62,21 +55,9 @@ public class CliApplication {
 			System.arraycopy(args, 1, remainingArgs, 0, args.length - 1);
 
 			DataCommandArgs parsed = DataCommandParser.parse(remainingArgs);
+			Aggregator aggregator = appFactory.createForData(parsed);
 
-	    Path outputPath = OutputPathResolver.resolve(parsed.filename(), parsed.format());
-
-	    new OutputFilePreparer().prepare(outputPath, parsed.writeMode());
-
-	    HttpResponder httpResponder = HttpResponder.getResponder();
-
-	    Map<String, ApiSource> selected = ApiSourceRegistry.select(httpResponder, parsed.sourceNames());
-
-			DataStorage dataStorage = DataStorageFactory.getDataStorage(parsed.format(), outputPath);
-
-     Aggregator aggregator = new Aggregator(dataStorage, selected);
-
-	    aggregator.makeRequest();
-
+			aggregator.makeRequest();
 			return 0;
 
 		} catch (ParsingException e) {
@@ -95,15 +76,10 @@ public class CliApplication {
 			System.arraycopy(args, 1, remainingArgs, 0, args.length - 1);
 
 			ShowCommandArgs parsed = ShowCommandParser.parse(remainingArgs);
+			Aggregator aggregator = appFactory.createForShow(parsed);
 
-	    Path outputPath = OutputPathResolver.resolve(parsed.filename(), parsed.format());
-	    DataStorage dataStorage = DataStorageFactory.getDataStorage(parsed.format(), outputPath);
-
-	    Aggregator aggregator = new Aggregator(dataStorage, null);
-      List<DataRecord> records = aggregator.readData(parsed.apiFilter());
-
+			List<DataRecord> records = aggregator.readData(parsed.apiFilter());
 			RecordPrinter.printAll(records);
-
 			return 0;
 
 		} catch (ParsingException e) {
@@ -111,7 +87,7 @@ public class CliApplication {
 			log.error(USAGE_SHOW);
 			return 2;
 		} catch (AppException e) {
-			log.error("Show command  error: {}", e.getMessage(), e);
+			log.error("Show command error: {}", e.getMessage(), e);
 			return 1;
 		}
 	}
