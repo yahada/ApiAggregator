@@ -6,7 +6,7 @@ import java.util.List;
 
 public class RecordPrinter {
 
-	public void printAll(List<DataRecord> records) {
+	public static void printAll(List<DataRecord> records) {
 		records.forEach(record -> System.out.println("API: " + record.source() + " | Record ID: " + record.entityId() + " | Metrics: " + record.metrics() + "\n"));
 	}
 }

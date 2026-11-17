@@ -14,9 +14,9 @@ import java.util.Map;
 @Slf4j
 public class AggregateService {
 
-	public static void aggregate(DataAggregator aggregator, Map<String, ApiSource> apiSourceMap) {
+ public static void aggregate(Aggregator aggregator, Map<String, ApiSource> apiSourceMap) {
 		if (apiSourceMap == null) {
-			throw new IllegalArgumentException("API sources map must not be null");
+			throw new AppException("API sources map must not be null");
 		}
 
 		for (Map.Entry<String, ApiSource> entry : apiSourceMap.entrySet()) {

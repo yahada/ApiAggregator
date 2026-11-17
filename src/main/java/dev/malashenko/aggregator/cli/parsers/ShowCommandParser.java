@@ -25,7 +25,7 @@ public class ShowCommandParser {
 	}
 
 	private static Optional<String> getApiFilter(String[] args) {
-		return parseOptionalApiFilter(args, 1);
+		return parseOptionalApiFilter(args);
 	}
 
 	private static StorageFormat detectFormat(String filename) {
@@ -39,8 +39,8 @@ public class ShowCommandParser {
 		return arg;
 	}
 
-	private static Optional<String> parseOptionalApiFilter(String[] args, int startIndex) {
-		for (int i = startIndex; i < args.length; i++) {
+	private static Optional<String> parseOptionalApiFilter(String[] args) {
+		for (int i = 1; i < args.length; i++) {
 			String arg = args[i];
 			if (arg.startsWith("API=") || arg.startsWith("--API=")) {
 				String cleaned = arg.startsWith("--") ? arg.substring(2) : arg;

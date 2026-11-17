@@ -5,9 +5,8 @@ import dev.malashenko.aggregator.cli.args.ShowCommandArgs;
 import dev.malashenko.aggregator.cli.parsers.DataCommandParser;
 import dev.malashenko.aggregator.cli.parsers.ShowCommandParser;
 import dev.malashenko.aggregator.core.aggregator.AggregateService;
-import dev.malashenko.aggregator.core.aggregator.DataAggregator;
+import dev.malashenko.aggregator.core.aggregator.Aggregator;
 import dev.malashenko.aggregator.core.aggregator.OutputPathResolver;
-import dev.malashenko.aggregator.core.aggregator.ShowAggregator;
 import dev.malashenko.aggregator.core.exception.AppException;
 import dev.malashenko.aggregator.core.exception.ParsingException;
 import dev.malashenko.aggregator.core.http.HttpResponder;
@@ -68,9 +67,11 @@ public class CliApplication {
 
 			DataCommandArgs parsed = DataCommandParser.parse(remainingArgs);
 
-			OutputFilePreparer.prepare(parsed);
+ 		Path outputPath = OutputPathResolver.resolve(parsed.filename(), parsed.format());
 
-			HttpResponder httpResponder = HttpResponder.getResponder();
+ 		new OutputFilePreparer().prepare(outputPath, parsed.writeMode());
+
+ 		HttpResponder httpResponder = HttpResponder.getResponder();
 
 			Map<String, ApiSource> allSources = ApiSourceRegistry.createAll(httpResponder);
 
@@ -83,12 +84,11 @@ public class CliApplication {
 				selected.put(name, source);
 			}
 
-			DataStorage dataStorage = DataStorageFactory.getDataStorage(parsed.format());
-			Path outputPath = OutputPathResolver.resolve(parsed.filename(), parsed.format());
+     DataStorage dataStorage = DataStorageFactory.getDataStorage(parsed.format(), outputPath);
 
-			DataAggregator aggregator = new DataAggregator(dataStorage, allSources, outputPath);
+     Aggregator aggregator = new Aggregator(dataStorage, allSources);
 
-			runSurveyAndRequests(aggregator, selected);
+	    runSurveyAndRequests(aggregator, selected);
 
 			return 0;
 
@@ -102,7 +102,7 @@ public class CliApplication {
 		}
 	}
 
-	private void runSurveyAndRequests(DataAggregator aggregator, Map<String, ApiSource> selectedSources) {
+	private void runSurveyAndRequests(Aggregator aggregator, Map<String, ApiSource> selectedSources) {
 		for (Map.Entry<String, ApiSource> entry : selectedSources.entrySet()) {
 			ApiSource source = entry.getValue();
 			log.info("API: {} — default params: {}", source.id(), source.defaultParams());
@@ -118,13 +118,13 @@ public class CliApplication {
 
 			ShowCommandArgs parsed = ShowCommandParser.parse(remainingArgs);
 
-			DataStorage dataStorage = DataStorageFactory.getDataStorage(parsed.format());
-			Path outputPath = OutputPathResolver.resolve(parsed.filename(), parsed.format());
+	    Path outputPath = OutputPathResolver.resolve(parsed.filename(), parsed.format());
+	    DataStorage dataStorage = DataStorageFactory.getDataStorage(parsed.format(), outputPath);
 
-			ShowAggregator aggregator = new ShowAggregator(dataStorage, outputPath);
-			List<DataRecord> records = aggregator.readData(parsed.apiFilter().orElse(null));
+	    Aggregator aggregator = new Aggregator(dataStorage, null);
+	    List<DataRecord> records = aggregator.readData(parsed.apiFilter().orElse(null));
 
-			new RecordPrinter().printAll(records);
+			RecordPrinter.printAll(records);
 
 			return 0;
 

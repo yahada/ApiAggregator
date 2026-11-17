@@ -1,4 +1,3 @@
-
 package dev.malashenko.aggregator.core.storage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -16,48 +15,57 @@ import java.util.List;
 @Slf4j
 public class JsonDataStorage implements DataStorage {
 
+	private final Path file;
 	private final ObjectMapper objectMapper;
 
-	public JsonDataStorage(ObjectMapper objectMapper) {
+	public JsonDataStorage(Path file, ObjectMapper objectMapper) {
+		this.file = file;
 		this.objectMapper = objectMapper;
 	}
 
 	@Override
-	public void saveData(List<DataRecord> data, Path path) {
-		log.info("Saving {} records to JSON: {}", data.size(), path);
+	public synchronized void saveData(List<DataRecord> data) {
+		if (data == null || data.isEmpty()) {
+			return;
+		}
+
+		log.info("Saving {} records to JSON: {}", data.size(), file);
+
+		List<DataRecord> toWrite = new ArrayList<>();
+		toWrite.addAll(readInternal());
+		toWrite.addAll(data);
+
 		try {
-			Path parent = path.toAbsolutePath().getParent();
-			Files.createDirectories(parent);
-
-			List<DataRecord> toWrite = new ArrayList<>();
-
-			if (Files.exists(path) && Files.size(path) > 0) {
-				toWrite.addAll(readData(path));
-			}
-
-			toWrite.addAll(data);
-
-			objectMapper.writerWithDefaultPrettyPrinter().writeValue(path.toFile(), toWrite);
-
+			objectMapper.writerWithDefaultPrettyPrinter().writeValue(file.toFile(), toWrite);
 		} catch (IOException e) {
-			throw new StorageException("Failed to write JSON to " + path + ": " + e.getMessage(), e);
+			throw new StorageException("Failed to write JSON to " + file + ": " + e.getMessage(), e);
 		}
 	}
 
-
 	@Override
-	public List<DataRecord> readData(Path path) {
-		if (!Files.exists(path)) {
-			log.info("JSON file does not exist: {}", path);
+	public List<DataRecord> readData() {
+		if (!Files.exists(file)) {
+			log.info("JSON file does not exist: {}", file);
 			return new ArrayList<>();
 		}
 
-		log.info("Reading JSON from: {}", path);
-		try {
-			return objectMapper.readValue(path.toFile(), new TypeReference<List<DataRecord>>() {});
-		} catch (IOException e) {
-			throw new StorageException("Failed to read JSON from " + path + ": " + e.getMessage(), e);
-		}
+		log.info("Reading JSON from: {}", file);
+		return readInternal();
 	}
 
+	@Override
+	public List<DataRecord> readData(String source) {
+		return readData().stream().filter(dataRecord -> dataRecord.source().equals(source)).toList();
+	}
+
+	private List<DataRecord> readInternal() {
+		try {
+			if (!Files.exists(file) || Files.size(file) == 0) {
+				return new ArrayList<>();
+			}
+			return objectMapper.readValue(file.toFile(), new TypeReference<>() {});
+		} catch (IOException e) {
+			throw new StorageException("Failed to read JSON from " + file + ": " + e.getMessage(), e);
+		}
+	}
 }

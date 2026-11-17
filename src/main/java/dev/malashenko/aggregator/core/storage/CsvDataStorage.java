@@ -1,4 +1,3 @@
-
 package dev.malashenko.aggregator.core.storage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -31,31 +30,36 @@ public class CsvDataStorage implements DataStorage {
 		"source", "entity_id", "observed_at", "metrics"
 	};
 
+	private final Path file;
 	private final ObjectMapper objectMapper;
 
-	public CsvDataStorage(ObjectMapper objectMapper) {
+	public CsvDataStorage(Path file, ObjectMapper objectMapper) {
+		this.file = file;
 		this.objectMapper = objectMapper;
 	}
 
 	@Override
-	public void saveData(List<DataRecord> data, Path path) {
-		log.info("Saving {} records to CSV: {}", data.size(), path);
-		try {
-			Path parent = path.toAbsolutePath().getParent();
-			Files.createDirectories(parent);
+	public synchronized void saveData(List<DataRecord> data) {
+		if (data == null || data.isEmpty()) {
+			return;
+		}
 
-			boolean writeHeader = !Files.exists(path) || Files.size(path) == 0;
+		log.info("Saving {} records to CSV: {}", data.size(), file);
+
+		try {
+			List<DataRecord> toWrite = new ArrayList<>();
+			toWrite.addAll(readInternal());
+			toWrite.addAll(data);
 
 			CSVFormat format = CSVFormat.DEFAULT
-				                   .builder()
-				                   .setHeader(writeHeader ? HEADER : null)
-				                   .build();
+				.builder()
+				.setHeader(HEADER)
+				.build();
 
-			try (Writer writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+			try (Writer writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 			     CSVPrinter printer = new CSVPrinter(writer, format)) {
 
-
-				for (DataRecord record : data) {
+				for (DataRecord record : toWrite) {
 					printer.printRecord(
 						record.source(),
 						record.entityId(),
@@ -66,26 +70,42 @@ public class CsvDataStorage implements DataStorage {
 			}
 
 		} catch (IOException e) {
-			throw new StorageException("Failed to write CSV to " + path + ": " + e.getMessage(), e);
+			throw new StorageException("Failed to write CSV to " + file + ": " + e.getMessage(), e);
 		}
 	}
 
 	@Override
-	public List<DataRecord> readData(Path path) {
-		if (!Files.exists(path)) {
-			log.info("CSV file does not exist: {}", path);
+	public List<DataRecord> readData() {
+		if (!Files.exists(file)) {
+			log.info("CSV file does not exist: {}", file);
 			return new ArrayList<>();
 		}
 
-		log.info("Reading CSV from: {}", path);
+		log.info("Reading CSV from: {}", file);
+		return readInternal();
+	}
+
+	@Override
+	public List<DataRecord> readData(String source) {
+		return readData().stream().filter(dataRecord -> dataRecord.source().equals(source)).toList();
+	}
+
+	private List<DataRecord> readInternal() {
+		try {
+			if (!Files.exists(file) || Files.size(file) == 0) {
+				return new ArrayList<>();
+			}
+		} catch (IOException e) {
+			throw new StorageException("Failed to check file " + file + ": " + e.getMessage(), e);
+		}
 		List<DataRecord> records = new ArrayList<>();
 
-		try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8);
-		     CSVParser parser = CSVFormat.DEFAULT.builder()
-			                        .setHeader()
-			                        .setSkipHeaderRecord(true)
-			                        .build()
-			                        .parse(reader)) {
+		try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8);
+	         CSVParser parser = CSVFormat.DEFAULT.builder()
+		                            .setHeader()
+		                            .setSkipHeaderRecord(true)
+		                            .build()
+		                            .parse(reader)) {
 
 			for (CSVRecord row : parser) {
 				Map<String, Object> metrics = objectMapper.readValue(row.get("metrics"), new TypeReference<>() {});
@@ -106,7 +126,7 @@ public class CsvDataStorage implements DataStorage {
 			return records;
 
 		} catch (IOException | IllegalArgumentException e) {
-			throw new StorageException("Failed to read CSV from " + path + ": " + e.getMessage(), e);
+			throw new StorageException("Failed to read CSV from " + file + ": " + e.getMessage(), e);
 		}
 	}
 }
