@@ -4,7 +4,6 @@ import dev.malashenko.aggregator.cli.args.DataCommandArgs;
 import dev.malashenko.aggregator.cli.args.ShowCommandArgs;
 import dev.malashenko.aggregator.cli.parsers.DataCommandParser;
 import dev.malashenko.aggregator.cli.parsers.ShowCommandParser;
-import dev.malashenko.aggregator.core.aggregator.AggregateService;
 import dev.malashenko.aggregator.core.aggregator.Aggregator;
 import dev.malashenko.aggregator.core.aggregator.OutputPathResolver;
 import dev.malashenko.aggregator.core.exception.AppException;
@@ -18,7 +17,6 @@ import dev.malashenko.aggregator.core.storage.DataStorageFactory;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,11 +24,9 @@ import java.util.Map;
 @Slf4j
 public class CliApplication {
 
-	private static final String USAGE_DATA =
-		"usage: data sources=<api1,api2,...> format=<csv|json> mode=<new|append> [file=<path>]";
+	private static final String USAGE_DATA = "usage: data sources=<api1,api2,...> format=<csv|json> mode=<new|append> [file=<path>]";
 
-	private static final String USAGE_SHOW =
-		"usage: show <file> [API=<name>]";
+	private static final String USAGE_SHOW = "usage: show file=<path> [source=<name>]";
 
 	private static final String USAGE =
 		"""
@@ -67,28 +63,19 @@ public class CliApplication {
 
 			DataCommandArgs parsed = DataCommandParser.parse(remainingArgs);
 
- 		Path outputPath = OutputPathResolver.resolve(parsed.filename(), parsed.format());
+	    Path outputPath = OutputPathResolver.resolve(parsed.filename(), parsed.format());
 
- 		new OutputFilePreparer().prepare(outputPath, parsed.writeMode());
+	    new OutputFilePreparer().prepare(outputPath, parsed.writeMode());
 
- 		HttpResponder httpResponder = HttpResponder.getResponder();
+	    HttpResponder httpResponder = HttpResponder.getResponder();
 
-			Map<String, ApiSource> allSources = ApiSourceRegistry.createAll(httpResponder);
+	    Map<String, ApiSource> selected = ApiSourceRegistry.select(httpResponder, parsed.sourceNames());
 
-			Map<String, ApiSource> selected = new LinkedHashMap<>();
-			for (String name : parsed.sourceNames()) {
-				ApiSource source = allSources.get(name);
-				if (source == null) {
-					throw new ParsingException("unknown source: '" + name + "'");
-				}
-				selected.put(name, source);
-			}
+			DataStorage dataStorage = DataStorageFactory.getDataStorage(parsed.format(), outputPath);
 
-     DataStorage dataStorage = DataStorageFactory.getDataStorage(parsed.format(), outputPath);
+     Aggregator aggregator = new Aggregator(dataStorage, selected);
 
-     Aggregator aggregator = new Aggregator(dataStorage, allSources);
-
-	    runSurveyAndRequests(aggregator, selected);
+	    aggregator.makeRequest();
 
 			return 0;
 
@@ -102,15 +89,6 @@ public class CliApplication {
 		}
 	}
 
-	private void runSurveyAndRequests(Aggregator aggregator, Map<String, ApiSource> selectedSources) {
-		for (Map.Entry<String, ApiSource> entry : selectedSources.entrySet()) {
-			ApiSource source = entry.getValue();
-			log.info("API: {} — default params: {}", source.id(), source.defaultParams());
-		}
-
-		AggregateService.aggregate(aggregator, selectedSources);
-	}
-
 	private int runShow(String[] args) {
 		try {
 			String[] remainingArgs = new String[args.length - 1];
@@ -122,7 +100,7 @@ public class CliApplication {
 	    DataStorage dataStorage = DataStorageFactory.getDataStorage(parsed.format(), outputPath);
 
 	    Aggregator aggregator = new Aggregator(dataStorage, null);
-	    List<DataRecord> records = aggregator.readData(parsed.apiFilter().orElse(null));
+      List<DataRecord> records = aggregator.readData(parsed.apiFilter());
 
 			RecordPrinter.printAll(records);
 

@@ -26,6 +26,7 @@ public class OutputFilePreparer {
 				if (Files.exists(file)) {
 					Files.delete(file);
 				}
+
 				Files.createFile(file);
 				log.info("Created new file: {}", file);
 			} else {

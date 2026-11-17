@@ -5,51 +5,21 @@ import dev.malashenko.aggregator.core.exception.ParsingException;
 import dev.malashenko.aggregator.core.model.StorageFormat;
 
 import java.nio.file.Path;
-import java.util.Optional;
+import java.util.Map;
 
-public class ShowCommandParser {
-
+public class ShowCommandParser extends CommandParser {
 
 	public static ShowCommandArgs parse(String[] args) {
-		String filename = getFilename(args);
-		Optional<String> apiFilter = getApiFilter(args);
-		StorageFormat format = detectFormat(filename);
+		Map<String, String> params = parseNameValue(args);
+
+		String filename = require(params, "file");
+		StorageFormat format = detectFormat(Path.of(filename));
+		String apiFilter = params.get("source");
+		if (apiFilter != null) {
+			apiFilter = apiFilter.toLowerCase();
+		}
+
 		return new ShowCommandArgs(filename, apiFilter, format);
-	}
-
-	private static String getFilename(String[] args) {
-		if (args.length == 0) {
- 		throw new ParsingException("'show' command requires a file argument");
-		}
-		return parseFilename(args[0]);
-	}
-
-	private static Optional<String> getApiFilter(String[] args) {
-		return parseOptionalApiFilter(args);
-	}
-
-	private static StorageFormat detectFormat(String filename) {
-		return detectFormat(Path.of(filename));
-	}
-
-	private static String parseFilename(String arg) {
-		if (arg.startsWith("file=")) {
-			return arg.substring("file=".length());
-		}
-		return arg;
-	}
-
-	private static Optional<String> parseOptionalApiFilter(String[] args) {
-		for (int i = 1; i < args.length; i++) {
-			String arg = args[i];
-			if (arg.startsWith("API=") || arg.startsWith("--API=")) {
-				String cleaned = arg.startsWith("--") ? arg.substring(2) : arg;
-				int eq = cleaned.indexOf('=');
-				String value = cleaned.substring(eq + 1).trim();
-				return Optional.of(value.toLowerCase());
-			}
-		}
-		return Optional.empty();
 	}
 
 	private static StorageFormat detectFormat(Path filePath) {

@@ -62,7 +62,7 @@
 | `page` | Номер страницы (начиная с 0) |
 | `hitsPerPage` | Количество результатов на странице (максимум 1000) |
 
-**Параметры по умолчанию в реализации:** `query=java`, `hitsPerPage=5`.
+**Параметры по умолчанию в реализации:** `query=java`, `hitsPerPage=100`.
 
 ---
 
@@ -103,12 +103,12 @@
 Проект разделён на слои для соблюдения принципов ООП и разделения ответственности:
 
 * **`cli`** — командная строка: парсинг аргументов (`DataCommandParser`, `ShowCommandParser`), диспетчеризация команд (`CliApplication`), вывод данных (`RecordPrinter`), подготовка файлов (`OutputFilePreparer`).
-* **`core.aggregator`** — бизнес-логика: `DataAggregator` выполняет запросы к API и сохраняет данные, `ShowAggregator` читает и фильтрует данные из файла, `AggregateService` обрабатывает ошибки при опросе источников, `OutputPathResolver` разрешает пути файлов.
+* **`core.aggregator`** — бизнес-логика: `Aggregator` выполняет запросы к API, сохраняет и читает данные с фильтрацией, обрабатывает ошибки при опросе источников, `OutputPathResolver` разрешает пути файлов.
 * **`core.source`** — реализации `ApiSource` для каждого API (Стратегия); `ApiSourceRegistry` создаёт карту всех доступных источников; `AbstractHttpApiSource` обеспечивает шаблонный метод запроса.
-* **`core.http`** — HTTP-слой: `HttpResponder` выполняет запросы с retry-политикой, `HttpRequestFactory` создаёт запросы, `RetryPolicy` управляет повторами.
+* **`core.http`** — HTTP-слой: `HttpResponder` выполняет запросы с retry-политикой, `RetryPolicy` управляет повторами.
 * **`core.storage`** — интерфейс `DataStorage` и реализации `JsonDataStorage`, `CsvDataStorage`; `DataStorageFactory` создаёт хранилище по формату (JSON/CSV).
 * **`core.model`** — модель данных `DataRecord`, параметры запроса `RequestParams`.
-* **`core.exception`** — иерархия исключений: `AppException` → `ParsingException`, `ApiException`, `StorageException`.
+* **`core.exception`** — иерархия исключений: `AppException` → `ParsingException` (парсинг CLI), `HttpException` (сетевые ошибки), `ApiException` (ошибки источников), `StorageException` (файловый ввод-вывод).
 
 *Новый API добавляется созданием нового класса, реализующего `ApiSource`, и регистрацией его в `ApiSourceRegistry`.*
 
@@ -138,12 +138,12 @@
 
 #### 4. Просмотр всего файла
 ```bash
-./gradlew run --args="show out.json"
+./gradlew run --args="show file=out.json"
 ```
 
 #### 5. Просмотр только определённого источника
 ```bash
-./gradlew run --args="show out.json API=usgs"
+./gradlew run --args="show file=out.json source=usgs"
 ```
 
 ### Параметры команды `data`
@@ -159,9 +159,9 @@
 
 | Параметр | Обязательный | Описание |
 |----------|:---:|----------|
-| `<file>` | ✅ | Путь к файлу с данными (`.json` или `.csv`) |
-| `API` | ❌ | Фильтр по источнику: `usgs`, `hackernews`, `kitsu` |
+| `file` | ✅ | Путь к файлу с данными (`.json` или `.csv`) |
+| `source` | ❌ | Фильтр по источнику: `usgs`, `hackernews`, `kitsu` |
 
 ## Обработка ошибок
 
-При неверных аргументах программа выводит понятное сообщение об ошибке и синтаксис команды. Если внешнее API недоступно, агрегатор логирует ошибку и продолжает опрос остальных источников. Все исключения организованы в иерархию: `AppException` → `ParsingException` (парсинг CLI), `ApiException` (HTTP/API), `StorageException` (файловый ввод-вывод).
+При неверных аргументах программа выводит понятное сообщение об ошибке и синтаксис команды. Если внешнее API недоступно, агрегатор логирует ошибку и продолжает опрос остальных источников. Все исключения организованы в иерархию: `AppException` → `ParsingException` (парсинг CLI), `HttpException` (сетевые ошибки), `ApiException` (ошибки источников), `StorageException` (файловый ввод-вывод).
