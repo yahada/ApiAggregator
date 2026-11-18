@@ -1,5 +1,6 @@
 package dev.malashenko.aggregator.core.source;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.malashenko.aggregator.core.http.HttpResponder;
 import dev.malashenko.aggregator.core.model.DataRecord;
 import dev.malashenko.aggregator.core.model.RequestParams;
@@ -18,7 +19,10 @@ public abstract class AbstractHttpApiSource implements ApiSource {
 
 	protected abstract String originUrl();
 
-	protected abstract RequestParams enrich(RequestParams params);
+	protected RequestParams enrich(RequestParams params)
+	{
+		return params;
+	}
 
 
 	public List<DataRecord> getApiRequest(RequestParams params) {

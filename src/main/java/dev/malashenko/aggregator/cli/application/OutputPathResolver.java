@@ -1,4 +1,4 @@
-package dev.malashenko.aggregator.core.aggregator;
+package dev.malashenko.aggregator.cli.application;
 
 import dev.malashenko.aggregator.core.exception.ParsingException;
 import dev.malashenko.aggregator.core.model.StorageFormat;

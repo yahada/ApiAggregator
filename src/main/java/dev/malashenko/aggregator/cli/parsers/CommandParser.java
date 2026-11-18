@@ -2,13 +2,14 @@ package dev.malashenko.aggregator.cli.parsers;
 
 import dev.malashenko.aggregator.core.exception.ParsingException;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public abstract class CommandParser {
 
-	static Map<String, String> parseNameValue(String[] args) {
-		Map<String, String> result = new LinkedHashMap<>();
+	protected static Map<String, String> parseNameValue(String[] args) {
+		Map<String, String> result = new HashMap<>();
 		for (String arg : args) {
 			String cleaned = arg.startsWith("--") ? arg.substring(2) : arg;
 			int eq = cleaned.indexOf('=');
@@ -28,7 +29,7 @@ public abstract class CommandParser {
 		return result;
 	}
 
-	static String require(Map<String, String> params, String key) {
+	protected static String require(Map<String, String> params, String key) {
 		String v = params.get(key);
 		if (v == null || v.isBlank()) {
 			throw new ParsingException("missing required argument: " + key);

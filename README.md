@@ -95,14 +95,14 @@
 |------|-----|----------|
 | `source` | `String` | Идентификатор источника (`usgs`, `hackernews`, `kitsu`) |
 | `entityId` | `String` | Уникальный идентификатор записи в источнике |
-| `observedAt` | `Optional<Instant>` | Время события (если доступно) |
+| `timestamp` | `Instant` | Время события; `Instant.EPOCH` если недоступно |
 | `metrics` | `Map<String, Object>` | Произвольные метрики (магнитуда, рейтинг, заголовок и т.д.) |
 
 ## Архитектура
 
 Проект разделён на слои для соблюдения принципов ООП и разделения ответственности:
 
-* **`cli`** — командная строка: парсинг аргументов (`DataCommandParser`, `ShowCommandParser`), диспетчеризация команд (`CliApplication`), вывод данных (`RecordPrinter`), подготовка файлов (`OutputFilePreparer`).
+* **`cli`** — командная строка: парсинг аргументов (`DataCommandParser`, `ShowCommandParser`), диспетчеризация команд (`CliApplication`), сборка зависимостей (`AppFactory`), вывод данных (`RecordPrinter`), подготовка файлов (`OutputFilePreparer`).
 * **`core.aggregator`** — бизнес-логика: `Aggregator` выполняет запросы к API, сохраняет и читает данные с фильтрацией, обрабатывает ошибки при опросе источников, `OutputPathResolver` разрешает пути файлов.
 * **`core.source`** — реализации `ApiSource` для каждого API (Стратегия); `ApiSourceRegistry` создаёт карту всех доступных источников; `AbstractHttpApiSource` обеспечивает шаблонный метод запроса.
 * **`core.http`** — HTTP-слой: `HttpResponder` выполняет запросы с retry-политикой, `RetryPolicy` управляет повторами.

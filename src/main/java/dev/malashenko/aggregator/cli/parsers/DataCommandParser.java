@@ -15,13 +15,9 @@ public class DataCommandParser extends CommandParser {
 
 	public static DataCommandArgs parse(String[] args) {
 		Map<String, String> params = parseNameValue(args);
-
 		List<String> sourceNames = parseSourceNames(require(params, "sources"));
-
 		StorageFormat format = parseStorageFormat(require(params, "format"));
-
 		WriteMode writeMode = parseWriteMode(require(params, "mode"));
-
 		String filename = params.getOrDefault("file", "out." + FileExtension.formatOf(format));
 
 		return new DataCommandArgs(sourceNames, format, writeMode, filename);
@@ -44,7 +40,7 @@ public class DataCommandParser extends CommandParser {
 
 	private static StorageFormat parseStorageFormat(String s) {
 		return switch (s.toLowerCase()) {
-			case "csv"  -> StorageFormat.CSV;
+			case "csv" -> StorageFormat.CSV;
 			case "json" -> StorageFormat.JSON;
 			default -> throw new ParsingException("unknown format: '" + s + "' (csv|json)");
 		};
@@ -52,7 +48,7 @@ public class DataCommandParser extends CommandParser {
 
 	private static WriteMode parseWriteMode(String s) {
 		return switch (s.toLowerCase()) {
-			case "new"    -> WriteMode.NEW;
+			case "new" -> WriteMode.NEW;
 			case "append" -> WriteMode.APPEND;
 			default -> throw new ParsingException("unknown mode: '" + s + "' (new|append)");
 		};

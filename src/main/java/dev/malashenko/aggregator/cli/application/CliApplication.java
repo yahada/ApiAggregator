@@ -39,8 +39,8 @@ public class CliApplication {
 		String command = args[0].toLowerCase();
 
 		return switch (command) {
-			case "data" -> runData(args);
-			case "show" -> runShow(args);
+			case "data" -> runData(extractArgs(args));
+			case "show" -> runShow(extractArgs(args));
 			default -> {
 				log.error("error: unknown command: '{}'", command);
 				log.error(USAGE);
@@ -51,10 +51,7 @@ public class CliApplication {
 
 	private int runData(String[] args) {
 		try {
-			String[] remainingArgs = new String[args.length - 1];
-			System.arraycopy(args, 1, remainingArgs, 0, args.length - 1);
-
-			DataCommandArgs parsed = DataCommandParser.parse(remainingArgs);
+			DataCommandArgs parsed = DataCommandParser.parse(args);
 			Aggregator aggregator = appFactory.createForData(parsed);
 
 			aggregator.makeRequest();
@@ -72,10 +69,7 @@ public class CliApplication {
 
 	private int runShow(String[] args) {
 		try {
-			String[] remainingArgs = new String[args.length - 1];
-			System.arraycopy(args, 1, remainingArgs, 0, args.length - 1);
-
-			ShowCommandArgs parsed = ShowCommandParser.parse(remainingArgs);
+			ShowCommandArgs parsed = ShowCommandParser.parse(args);
 			Aggregator aggregator = appFactory.createForShow(parsed);
 
 			List<DataRecord> records = aggregator.readData(parsed.apiFilter());
@@ -90,5 +84,11 @@ public class CliApplication {
 			log.error("Show command error: {}", e.getMessage(), e);
 			return 1;
 		}
+	}
+
+	private String[] extractArgs(String[] args) {
+		String[] remainingArgs = new String[args.length - 1];
+		System.arraycopy(args, 1, remainingArgs, 0, args.length - 1);
+		return remainingArgs;
 	}
 }

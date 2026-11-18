@@ -22,8 +22,8 @@ public class Aggregator {
 	private final Map<String, ApiSource> apiSourceMap;
 
 	public Aggregator(DataStorage dataStorage, Map<String, ApiSource> apiSourceMap) {
-		this.dataStorage = Objects.requireNonNull(dataStorage, "dataStorage must not be null");
-		this.apiSourceMap = apiSourceMap != null ? Map.copyOf(apiSourceMap) : null;
+		this.dataStorage = dataStorage;
+		this.apiSourceMap = apiSourceMap;
 	}
 
 	public void makeRequest() {

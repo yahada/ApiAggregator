@@ -21,13 +21,12 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Slf4j
 public class CsvDataStorage implements DataStorage {
 
 	private static final String[] HEADER = {
-		"source", "entity_id", "observed_at", "metrics"
+		"source", "entity_id", "timestamp", "metrics"
 	};
 
 	private final Path file;
@@ -63,7 +62,7 @@ public class CsvDataStorage implements DataStorage {
 					printer.printRecord(
 						record.source(),
 						record.entityId(),
-						record.observedAt().map(Instant::toString).orElse(""),
+						record.timestamp().toString(),
 						objectMapper.writeValueAsString(record.metrics())
 					);
 				}
@@ -101,24 +100,21 @@ public class CsvDataStorage implements DataStorage {
 		List<DataRecord> records = new ArrayList<>();
 
 		try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8);
-	         CSVParser parser = CSVFormat.DEFAULT.builder()
-		                            .setHeader()
-		                            .setSkipHeaderRecord(true)
-		                            .build()
-		                            .parse(reader)) {
+		     CSVParser parser = CSVFormat.DEFAULT.builder()
+		                             .setHeader()
+		                             .setSkipHeaderRecord(true)
+		                             .build()
+		                             .parse(reader)) {
 
 			for (CSVRecord row : parser) {
 				Map<String, Object> metrics = objectMapper.readValue(row.get("metrics"), new TypeReference<>() {});
 
-				String observedAtStr = row.get("observed_at");
-				Optional<Instant> observedAt = observedAtStr.isEmpty()
-					? Optional.empty()
-					: Optional.of(Instant.parse(observedAtStr));
+				String timestamp = row.get("timestamp");
 
 				records.add(new DataRecord(
 					row.get("source"),
 					row.get("entity_id"),
-					observedAt,
+					Instant.parse(timestamp),
 					metrics
 				));
 			}

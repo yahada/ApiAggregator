@@ -13,17 +13,17 @@ import java.time.Duration;
 @Slf4j
 public class HttpResponder {
 
-	private static final HttpClient httpClient = HttpClient.newHttpClient();
+	private final  HttpClient httpClient;
 	private final RetryPolicy retryPolicy;
 
-	public HttpResponder(RetryPolicy retryPolicy) {
+	public HttpResponder(RetryPolicy retryPolicy, HttpClient httpClient) {
 		this.retryPolicy = retryPolicy;
+		this.httpClient = httpClient;
 	}
 
-	public static HttpResponder getResponder() {
+	public static HttpResponder getDefaultResponder() {
 		RetryPolicy retryPolicy = new RetryPolicy(3, Duration.ofSeconds(1), Duration.ofSeconds(10));
-
-		return new HttpResponder(retryPolicy);
+		return new HttpResponder(retryPolicy, HttpClient.newHttpClient());
 	}
 
 	public String getResponse(String url) {
