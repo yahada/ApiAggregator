@@ -3,7 +3,6 @@ package dev.malashenko.aggregator.cli.parsers;
 import dev.malashenko.aggregator.core.exception.ParsingException;
 
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 public abstract class CommandParser {

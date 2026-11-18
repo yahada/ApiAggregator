@@ -3,7 +3,6 @@ package dev.malashenko.aggregator.core.source;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.malashenko.aggregator.core.exception.AppException;
 import dev.malashenko.aggregator.core.http.HttpResponder;
-import dev.malashenko.aggregator.core.tools.ObjectMapperBuilder;
 
 import java.util.LinkedHashMap;
 import java.util.List;
