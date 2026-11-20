@@ -7,9 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.malashenko.aggregator.http.HttpResponder;
 import dev.malashenko.aggregator.model.DataRecord;
 
+
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,21 +34,10 @@ public class KitsuHttpApiSource implements ApiSource {
 
 	@Override
 	public List<DataRecord> fetch(Map<String, String> parameters) throws IOException, InterruptedException {
-		StringBuilder url = new StringBuilder(BASE_URL);
-		String separator = "?";
-		for (Map.Entry<String, String> entry : parameters.entrySet()) {
-			url.append(separator).append(encode(entry.getKey())).append("=").append(encode(entry.getValue()));
-			separator = "&";
-		}
-
+		String url = UrlBuilder.build(BASE_URL, parameters);
 		log.debug("Fetching Kitsu data from: {}", url);
-		String json = httpResponder.get(url.toString());
+		String json = httpResponder.get(url);
 		return map(json);
-	}
-
-
-	private String encode(String value) {
-		return URLEncoder.encode(value, StandardCharsets.UTF_8);
 	}
 
 	@Override
@@ -66,13 +54,10 @@ public class KitsuHttpApiSource implements ApiSource {
 			Map<String, Object> metrics = new HashMap<>();
 
 			metrics.put("title", attrs.path("titles").path("en").asText("unknown"));
-
 			if (attrs.path("averageRating").isNumber()) {
 				metrics.put("averageRating", attrs.path("averageRating").asDouble());
 			}
-
 			metrics.put("status", attrs.path("status").asText(""));
-
 			metrics.put("episodeCount", attrs.path("episodeCount").asInt(0));
 
 			records.add(new DataRecord("kitsu", entityId, timestamp, metrics));

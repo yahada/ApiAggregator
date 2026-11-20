@@ -1,5 +1,6 @@
 package dev.malashenko.aggregator.cli;
 
+import dev.malashenko.aggregator.factory.AppFactory;
 import lombok.extern.slf4j.Slf4j;
 
 import dev.malashenko.aggregator.aggregator.Aggregator;
@@ -31,6 +32,7 @@ public class CliApplication {
 		}
 
 		String command = args[0].toLowerCase(Locale.ROOT);
+
 		Map<String, String> params = parseParams(Arrays.copyOfRange(args, 1, args.length));
 
 		switch (command) {
@@ -41,8 +43,10 @@ public class CliApplication {
 	}
 
 	private void runData(Map<String, String> params) throws IOException, InterruptedException {
-		validateUnknownParams(params, List.of("sources", "format", "mode", "file"));
+		validateUnknownParams(params, List.of("sources", "format", "mode", "file")); //HashSet надобы
+
 		List<String> sources = parseSources(params);
+
 		String format = getRequired(params, "format");
 		String mode = getRequired(params, "mode");
 		String file = getRequired(params, "file");
@@ -50,7 +54,7 @@ public class CliApplication {
 		Path filePath = Path.of(file);
 		validateFileFormat(format, filePath);
 
-		WriteMode writeMode = appFactory.parseWriteMode(mode);
+		WriteMode writeMode = parseWriteMode(mode);
 		DataStorage storage = appFactory.createStorage(format, filePath);
 		List<DataRecord> records = aggregator.aggregate(sources);
 
@@ -60,7 +64,8 @@ public class CliApplication {
 	}
 
 	private void runShow(Map<String, String> params) throws IOException {
-		validateUnknownParams(params, List.of("file", "format", "source"));
+		validateUnknownParams(params, List.of("file", "format", "source")); //HashSet надобы
+
 		String file = getRequired(params, "file");
 		String format = getRequired(params, "format");
 		String source = params.get("source");
@@ -92,6 +97,14 @@ public class CliApplication {
 		return Arrays.asList(sources.split(","));
 	}
 
+	public WriteMode parseWriteMode(String mode) {
+		return switch (mode.toLowerCase(Locale.ROOT)) {
+			case "new" -> WriteMode.NEW;
+			case "append" -> WriteMode.APPEND;
+			default -> throw new IllegalArgumentException("Unsupported mode: " + mode);
+		};
+	}
+
 	private String getRequired(Map<String, String> params, String key) {
 		String value = params.get(key);
 		if (value == null || value.isBlank()) {
@@ -120,10 +133,10 @@ public class CliApplication {
 	private String getFileExtension(Path path) {
 		String fileName = path.getFileName().toString().toLowerCase(Locale.ROOT);
 		int lastDot = fileName.lastIndexOf('.');
+
 		if (lastDot == -1) {
 			throw new IllegalArgumentException("File has no extension: " + path);
 		}
 		return fileName.substring(lastDot + 1);
 	}
-
 }

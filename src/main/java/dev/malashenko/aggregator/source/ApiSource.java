@@ -10,4 +10,5 @@ public interface ApiSource {
 	Map<String, String> defaultParams();
 	List<DataRecord> fetch(Map<String, String> parameters) throws IOException, InterruptedException;
 	List<DataRecord> map(String json) throws IOException;
+
 }

@@ -15,6 +15,7 @@ public interface DataStorage {
         if (source == null) {
             return readAll();
         }
+
         return readAll().stream()
                 .filter(record -> source.equals(record.source()))
                 .toList();

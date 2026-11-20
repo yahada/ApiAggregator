@@ -8,8 +8,6 @@ import dev.malashenko.aggregator.http.HttpResponder;
 import dev.malashenko.aggregator.model.DataRecord;
 
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,20 +33,10 @@ public class EarthquakeUsgsHttpApiSource implements ApiSource {
 
 	@Override
 	public List<DataRecord> fetch(Map<String, String> parameters) throws IOException, InterruptedException {
-		StringBuilder url = new StringBuilder(BASE_URL);
-		String separator = "&";
-		for (Map.Entry<String, String> entry : parameters.entrySet()) {
-			url.append(separator).append(encode(entry.getKey())).append("=").append(encode(entry.getValue()));
-			separator = "&";
-		}
-
+		String url = UrlBuilder.build(BASE_URL, parameters);
 		log.debug("Fetching USGS data from: {}", url);
-		String json = httpResponder.get(url.toString());
+		String json = httpResponder.get(url);
 		return map(json);
-	}
-
-	private String encode(String value) {
-		return URLEncoder.encode(value, StandardCharsets.UTF_8);
 	}
 
 
@@ -74,6 +62,5 @@ public class EarthquakeUsgsHttpApiSource implements ApiSource {
 		log.info("Mapped {} USGS earthquake records", records.size());
 		return records;
 	}
-
 
 }
