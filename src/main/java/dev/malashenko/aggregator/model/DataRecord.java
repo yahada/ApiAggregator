@@ -1,4 +1,4 @@
-package dev.malashenko.aggregator.core.model;
+package dev.malashenko.aggregator.model;
 
 import java.time.Instant;
 import java.util.Map;

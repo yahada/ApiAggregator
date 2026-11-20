@@ -1,26 +1,33 @@
 package dev.malashenko.aggregator;
 
-import dev.malashenko.aggregator.cli.application.CliApplication;
-import dev.malashenko.aggregator.core.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
+
+import dev.malashenko.aggregator.cli.AppFactory;
+import dev.malashenko.aggregator.cli.CliApplication;
+import dev.malashenko.aggregator.aggregator.Aggregator;
+
+import java.io.IOException;
 
 @Slf4j
 public class Main {
 
 	public static void main(String[] args) {
+		log.info("ApiAggregator starting with args: {}", java.util.Arrays.toString(args));
 		try {
-			CliApplication application = new CliApplication();
-			int exitCode = application.run(args);
-			log.info("Finished with csode {}", exitCode);
-			if (exitCode != 0) {
-				System.exit(exitCode);
-			}
-		} catch (AppException e) {
-			log.error("Execution error: {}", e.getMessage());
+			AppFactory appFactory = new AppFactory();
+			Aggregator aggregator = appFactory.createAggregator();
+			CliApplication application = new CliApplication(aggregator, appFactory);
+			application.run(args);
+			log.info("ApiAggregator finished successfully");
+		} catch (IOException e) {
+			log.error("IO error: {}", e.getMessage(), e);
 			System.exit(1);
-		} catch (RuntimeException e) {
-			log.error("Unexpected error: {}", e.getMessage());
+		} catch (InterruptedException e) {
+			log.error("Interrupted: {}", e.getMessage(), e);
 			System.exit(1);
+		} catch (IllegalArgumentException e) {
+			log.error("Argument error: {}", e.getMessage());
+			System.exit(2);
 		}
 	}
 }
