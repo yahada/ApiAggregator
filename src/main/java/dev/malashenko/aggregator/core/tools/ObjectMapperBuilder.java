@@ -7,10 +7,13 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 public class ObjectMapperBuilder {
 
+	private static final ObjectMapper mapper = new ObjectMapper()
+		                              .registerModule(new JavaTimeModule())
+		                              .registerModule(new Jdk8Module())
+		                              .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+
 	public static ObjectMapper buildDefault() {
-		return new ObjectMapper()
-			       .registerModule(new JavaTimeModule())
-			       .registerModule(new Jdk8Module())
-			       .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+		return mapper;
 	}
 }

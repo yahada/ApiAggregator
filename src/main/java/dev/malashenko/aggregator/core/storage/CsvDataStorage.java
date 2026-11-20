@@ -38,7 +38,7 @@ public class CsvDataStorage implements DataStorage {
 	}
 
 	@Override
-	public synchronized void saveData(List<DataRecord> data) {
+	public void saveData(List<DataRecord> data) {
 		if (data == null || data.isEmpty()) {
 			return;
 		}

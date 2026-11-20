@@ -11,7 +11,7 @@ public class Main {
 		try {
 			CliApplication application = new CliApplication();
 			int exitCode = application.run(args);
-			log.info("Finished with code {}", exitCode);
+			log.info("Finished with csode {}", exitCode);
 			if (exitCode != 0) {
 				System.exit(exitCode);
 			}
