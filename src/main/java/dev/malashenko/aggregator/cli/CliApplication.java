@@ -10,11 +10,7 @@ import dev.malashenko.aggregator.storage.DataStorage;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 public class CliApplication {
@@ -43,18 +39,24 @@ public class CliApplication {
 	}
 
 	private void runData(Map<String, String> params) throws IOException, InterruptedException {
-		validateUnknownParams(params, List.of("sources", "format", "mode", "file")); //HashSet надобы
+		validateUnknownParams(params, Set.of("sources", "format", "mode", "file"));
 
-		List<String> sources = parseSources(params);
+		String sourcesStr = getRequired(params, "sources");
+		List<String> sources = Arrays.asList(sourcesStr.split(","));
 
 		String format = getRequired(params, "format");
 		String mode = getRequired(params, "mode");
-		String file = getRequired(params, "file");
+		WriteMode writeMode = parseWriteMode(mode);
+
+		String file = params.get("file");
+
+		if (file == null) {
+			file = "out." + format.toLowerCase(Locale.ROOT);
+		}
 
 		Path filePath = Path.of(file);
 		validateFileFormat(format, filePath);
 
-		WriteMode writeMode = parseWriteMode(mode);
 		DataStorage storage = appFactory.createStorage(format, filePath);
 		List<DataRecord> records = aggregator.aggregate(sources);
 
@@ -64,14 +66,12 @@ public class CliApplication {
 	}
 
 	private void runShow(Map<String, String> params) throws IOException {
-		validateUnknownParams(params, List.of("file", "format", "source")); //HashSet надобы
+		validateUnknownParams(params, Set.of("file", "source"));
 
 		String file = getRequired(params, "file");
-		String format = getRequired(params, "format");
-		String source = params.get("source");
-
 		Path filePath = Path.of(file);
-		validateFileFormat(format, filePath);
+		String format = getFileExtension(filePath);
+		String source = params.get("source");
 
 		DataStorage storage = appFactory.createStorage(format, filePath);
 		List<DataRecord> records = storage.readBySource(source);
@@ -92,12 +92,7 @@ public class CliApplication {
 		return params;
 	}
 
-	private List<String> parseSources(Map<String, String> params) {
-		String sources = getRequired(params, "sources");
-		return Arrays.asList(sources.split(","));
-	}
-
-	public WriteMode parseWriteMode(String mode) {
+	private WriteMode parseWriteMode(String mode) {
 		return switch (mode.toLowerCase(Locale.ROOT)) {
 			case "new" -> WriteMode.NEW;
 			case "append" -> WriteMode.APPEND;
@@ -113,7 +108,7 @@ public class CliApplication {
 		return value;
 	}
 
-	private void validateUnknownParams(Map<String, String> params, List<String> allowed) {
+	private void validateUnknownParams(Map<String, String> params, Set<String> allowed) {
 		for (String key : params.keySet()) {
 			if (!allowed.contains(key)) {
 				throw new IllegalArgumentException("Unknown parameter: " + key);
@@ -121,8 +116,8 @@ public class CliApplication {
 		}
 	}
 
-	private void validateFileFormat(String format, Path filePath) {
-		String extension = getFileExtension(filePath);
+	private void validateFileFormat(String format, Path path) {
+		String extension = getFileExtension(path);
 		String expectedExtension = format.toLowerCase(Locale.ROOT);
 
 		if (!extension.equals(expectedExtension)) {
@@ -135,8 +130,9 @@ public class CliApplication {
 		int lastDot = fileName.lastIndexOf('.');
 
 		if (lastDot == -1) {
-			throw new IllegalArgumentException("File has no extension: " + path);
+			throw new IllegalArgumentException("File has no extension: " + path );
 		}
+
 		return fileName.substring(lastDot + 1);
 	}
 }

@@ -1,9 +1,9 @@
 package dev.malashenko.aggregator.aggregator;
 
+import dev.malashenko.aggregator.source.HttpApiSource;
 import lombok.extern.slf4j.Slf4j;
 
 import dev.malashenko.aggregator.model.DataRecord;
-import dev.malashenko.aggregator.source.ApiSource;
 import dev.malashenko.aggregator.source.ApiSourceRegistry;
 
 import java.io.IOException;
@@ -22,7 +22,7 @@ public class Aggregator {
 		List<DataRecord> result = new ArrayList<>();
 
 		for (String name : sourceNames) {
-			ApiSource source = registry.get(name);
+			HttpApiSource source = registry.get(name);
 			log.debug("Fetching data from source: {}", name);
 			List<DataRecord> records = source.fetch(source.defaultParams());
 			log.info("Source {} returned {} records", name, records.size());

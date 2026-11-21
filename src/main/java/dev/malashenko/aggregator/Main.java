@@ -15,10 +15,12 @@ public class Main {
 	public static void main(String[] args) {
 		log.info("ApiAggregator starting with args: {}", java.util.Arrays.toString(args));
 		try (HttpClient client = HttpClient.newHttpClient()) {
+
 			AppFactory appFactory = new AppFactory(client);
 			Aggregator aggregator = appFactory.createAggregator();
 
 			CliApplication application = new CliApplication(aggregator, appFactory);
+
 			application.run(args);
 			log.info("ApiAggregator finished successfully");
 		} catch (IOException e) {

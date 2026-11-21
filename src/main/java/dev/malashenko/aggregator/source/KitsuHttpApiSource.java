@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-public class KitsuHttpApiSource implements ApiSource {
+public class KitsuHttpApiSource extends HttpApiSource {
 
 	private static final String BASE_URL = "https://kitsu.io/api/edge/anime";
 	private final HttpResponder httpResponder;
@@ -34,7 +34,7 @@ public class KitsuHttpApiSource implements ApiSource {
 
 	@Override
 	public List<DataRecord> fetch(Map<String, String> parameters) throws IOException, InterruptedException {
-		String url = UrlBuilder.build(BASE_URL, parameters);
+		String url = buildUrl(BASE_URL, parameters);
 		log.debug("Fetching Kitsu data from: {}", url);
 		String json = httpResponder.get(url);
 		return map(json);

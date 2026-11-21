@@ -1,5 +1,6 @@
 package dev.malashenko.aggregator.factory;
 
+import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.extern.slf4j.Slf4j;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,14 +20,13 @@ import java.util.Locale;
 @Slf4j
 public class AppFactory {
 	private final HttpResponder httpResponder;
-	private final ObjectMapper objectMapper;
+	private final ObjectMapper objectMapper = new ObjectMapper()
+		                                          .registerModule(new JavaTimeModule())
+		                                          .registerModule(new Jdk8Module())
+		                                          .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
 	public AppFactory(HttpClient client) {
 		this.httpResponder = new HttpResponder(client);
-
-		this.objectMapper = new ObjectMapper();
-		this.objectMapper.registerModule(new JavaTimeModule());
-		this.objectMapper.registerModule(new Jdk8Module());
 	}
 
 	public Aggregator createAggregator() {

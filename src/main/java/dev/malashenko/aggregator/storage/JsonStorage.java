@@ -15,43 +15,42 @@ import java.util.List;
 
 @Slf4j
 public class JsonStorage implements DataStorage {
-    private final Path path;
-    private final ObjectMapper objectMapper;
+	private final Path path;
+	private final ObjectMapper objectMapper;
 
-    public JsonStorage(Path path, ObjectMapper objectMapper) {
-        this.path = path;
-        this.objectMapper = objectMapper;
-    }
+	public JsonStorage(Path path, ObjectMapper objectMapper) {
+		this.path = path;
+		this.objectMapper = objectMapper;
+	}
 
-    @Override
-    public void save(List<DataRecord> records, WriteMode mode) throws IOException {
-        List<DataRecord> data = new ArrayList<>();
+	@Override
+	public void save(List<DataRecord> records, WriteMode mode) throws IOException {
+		List<DataRecord> data = new ArrayList<>();
 
-        if (mode == WriteMode.APPEND) {
-            data.addAll(readAll());
-        }
+		if (mode == WriteMode.APPEND) {
+			data.addAll(readAll());
+		}
+		data.addAll(records);
 
-        data.addAll(records);
+		Path parent = path.toAbsolutePath().getParent();
 
-        Path parent = path.toAbsolutePath().getParent();
+		if (parent != null) {
+			Files.createDirectories(parent);
+		}
 
-        if (parent != null) {
-            Files.createDirectories(parent);
-        }
+		objectMapper.writerWithDefaultPrettyPrinter().writeValue(path.toFile(), data);
+		log.info("Saved {} records to JSON: {}", data.size(), path);
+	}
 
-        objectMapper.writerWithDefaultPrettyPrinter().writeValue(path.toFile(), data);
-        log.info("Saved {} records to JSON: {}", data.size(), path);
-    }
+	@Override
+	public List<DataRecord> readAll() throws IOException {
+		if (Files.notExists(path) || Files.size(path) == 0) {
+			log.debug("JSON file not found or empty: {}", path);
+			return List.of();
+		}
 
-    @Override
-    public List<DataRecord> readAll() throws IOException {
-        if (Files.notExists(path) || Files.size(path) == 0) {
-            log.debug("JSON file not found or empty: {}", path);
-            return List.of();
-        }
-
-        List<DataRecord> records = objectMapper.readValue(path.toFile(), new TypeReference<>() {});
-        log.info("Read {} records from JSON: {}", records.size(), path);
-        return records;
-    }
+		List<DataRecord> records = objectMapper.readValue(path.toFile(), new TypeReference<>() {});
+		log.info("Read {} records from JSON: {}", records.size(), path);
+		return records;
+	}
 }

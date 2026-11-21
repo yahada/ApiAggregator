@@ -18,11 +18,11 @@ public class RecordPrinter {
 	private static void print(DataRecord record) {
 		System.out.printf(
 			"""
-			Source: %s
-			Entity ID: %s
-			Timestamp: %s
-			Metrics:
-			""",
+				Source: %s
+				Entity ID: %s
+				Timestamp: %s
+				Metrics:
+				""",
 			record.source(),
 			record.entityId(),
 			record.timestamp()

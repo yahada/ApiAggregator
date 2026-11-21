@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-public class EarthquakeUsgsHttpApiSource implements ApiSource {
+public class EarthquakeUsgsHttpApiSource extends HttpApiSource {
 
 	private static final String BASE_URL = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson";
 	private final ObjectMapper objectMapper;
@@ -33,7 +33,7 @@ public class EarthquakeUsgsHttpApiSource implements ApiSource {
 
 	@Override
 	public List<DataRecord> fetch(Map<String, String> parameters) throws IOException, InterruptedException {
-		String url = UrlBuilder.build(BASE_URL, parameters);
+		String url = buildUrl(BASE_URL, parameters);
 		log.debug("Fetching USGS data from: {}", url);
 		String json = httpResponder.get(url);
 		return map(json);
@@ -60,6 +60,7 @@ public class EarthquakeUsgsHttpApiSource implements ApiSource {
 			records.add(new DataRecord("usgs", entityId, timestamp, metrics));
 		}
 		log.info("Mapped {} USGS earthquake records", records.size());
+
 		return records;
 	}
 

@@ -22,10 +22,10 @@ public class HttpResponder {
 		log.info("HTTP GET request to: {}", url);
 
 		HttpRequest request = HttpRequest.newBuilder()
-				.uri(URI.create(url))
-				.timeout(Duration.ofSeconds(10))
-				.GET()
-				.build();
+			                      .uri(URI.create(url))
+			                      .timeout(Duration.ofSeconds(10))
+			                      .GET()
+			                      .build();
 
 		HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 

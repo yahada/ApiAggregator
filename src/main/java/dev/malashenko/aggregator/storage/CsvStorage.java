@@ -24,92 +24,92 @@ import java.util.Map;
 
 @Slf4j
 public class CsvStorage implements DataStorage {
-    private static final List<String> HEADERS = List.of(
-            "source", "entityId", "timestamp", "metrics"
-    );
+	private static final List<String> HEADERS = List.of(
+		"source", "entityId", "timestamp", "metrics"
+	);
 
-    private final Path path;
-    private final ObjectMapper objectMapper;
+	private final Path path;
+	private final ObjectMapper objectMapper;
 
-    public CsvStorage(Path path, ObjectMapper objectMapper) {
-        this.path = path;
-        this.objectMapper = objectMapper;
-    }
+	public CsvStorage(Path path, ObjectMapper objectMapper) {
+		this.path = path;
+		this.objectMapper = objectMapper;
+	}
 
-    @Override
-    public void save(List<DataRecord> records, WriteMode mode) throws IOException {
-        List<DataRecord> data = new ArrayList<>();
+	@Override
+	public void save(List<DataRecord> records, WriteMode mode) throws IOException {
+		List<DataRecord> data = new ArrayList<>();
 
-        if (mode == WriteMode.APPEND) {
-            data.addAll(readAll());
-        }
+		if (mode == WriteMode.APPEND) {
+			data.addAll(readAll());
+		}
 
-        data.addAll(records);
+		data.addAll(records);
 
-        Path parent = path.toAbsolutePath().getParent();
+		Path parent = path.toAbsolutePath().getParent();
 
-        if (parent != null) {
-            Files.createDirectories(parent);
-        }
+		if (parent != null) {
+			Files.createDirectories(parent);
+		}
 
-        CSVFormat format = CSVFormat.DEFAULT.builder()
-                .setHeader(HEADERS.toArray(new String[0]))
-                .build();
+		CSVFormat format = CSVFormat.DEFAULT.builder()
+			                   .setHeader(HEADERS.toArray(new String[0]))
+			                   .build();
 
-        try (Writer writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8);
-             CSVPrinter printer = new CSVPrinter(writer, format)) {
+		try (Writer writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8);
+		     CSVPrinter printer = new CSVPrinter(writer, format)) {
 
-            for (DataRecord record : data) {
-                String metricsJson = objectMapper.writeValueAsString(record.metrics());
-                printer.printRecord(
-                        record.source(),
-                        record.entityId(),
-                        record.timestamp().toString(),
-                        metricsJson
-                );
-            }
-        }
-        log.info("Saved {} records to CSV: {}", data.size(), path);
-    }
+			for (DataRecord record : data) {
+				String metricsJson = objectMapper.writeValueAsString(record.metrics());
+				printer.printRecord(
+					record.source(),
+					record.entityId(),
+					record.timestamp().toString(),
+					metricsJson
+				);
+			}
+		}
+		log.info("Saved {} records to CSV: {}", data.size(), path);
+	}
 
-    @Override
-    public List<DataRecord> readAll() throws IOException {
-        if (Files.notExists(path) || Files.size(path) == 0) {
-            log.debug("CSV file not found or empty: {}", path);
-            return List.of();
-        }
+	@Override
+	public List<DataRecord> readAll() throws IOException {
+		if (Files.notExists(path) || Files.size(path) == 0) {
+			log.debug("CSV file not found or empty: {}", path);
+			return List.of();
+		}
 
-        CSVFormat format = CSVFormat.DEFAULT.builder()
-                .setHeader()
-                .setSkipHeaderRecord(true)
-                .build();
+		CSVFormat format = CSVFormat.DEFAULT.builder()
+			                   .setHeader()
+			                   .setSkipHeaderRecord(true)
+			                   .build();
 
-        List<DataRecord> records = new ArrayList<>();
+		List<DataRecord> records = new ArrayList<>();
 
-        try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8);
-             CSVParser parser = new CSVParser(reader, format)) {
-            if (!parser.getHeaderNames().equals(HEADERS)) {
-                throw new IOException("Invalid CSV headers");
-            }
+		try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8);
+		     CSVParser parser = new CSVParser(reader, format)) {
+			if (!parser.getHeaderNames().equals(HEADERS)) {
+				throw new IOException("Invalid CSV headers");
+			}
 
-            for (CSVRecord row : parser) {
-                if (row.size() != HEADERS.size()) {
-                    throw new IOException("Invalid CSV record");
-                }
+			for (CSVRecord row : parser) {
+				if (row.size() != HEADERS.size()) {
+					throw new IOException("Invalid CSV record");
+				}
 
-                String metricsJson = row.get("metrics");
-                Map<String, Object> metrics = objectMapper.readValue(metricsJson, new TypeReference<>() {});
+				String metricsJson = row.get("metrics");
+				Map<String, Object> metrics = objectMapper.readValue(metricsJson, new TypeReference<>() {});
 
-                records.add(new DataRecord(
-                        row.get("source"),
-                        row.get("entityId"),
-                        Instant.parse(row.get("timestamp")),
-                        metrics
-                ));
-            }
-        }
+				records.add(new DataRecord(
+					row.get("source"),
+					row.get("entityId"),
+					Instant.parse(row.get("timestamp")),
+					metrics
+				));
+			}
+		}
 
-        log.info("Read {} records from CSV: {}", records.size(), path);
-        return records;
-    }
+		log.info("Read {} records from CSV: {}", records.size(), path);
+		return records;
+	}
 }
